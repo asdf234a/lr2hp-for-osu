@@ -31,12 +31,9 @@ public sealed class ClearRecord
     public string Scoring => ClearStore.ScoringOf(Client, Mods);
 }
 
+/// <summary>One difficulty, found by its MD5 (tosu gives the selected map's); names come from tosu, not from here.</summary>
 public sealed class MapRecord
 {
-    public string Title { get; set; } = "";
-    public string Artist { get; set; } = "";
-    public string Version { get; set; } = "";
-    public string Mapper { get; set; } = "";
     public int Keys { get; set; }
     /// <summary>Rate ("1.0", "1.2", ...) -> clears at that rate, oldest first</summary>
     public Dictionary<string, List<ClearRecord>> Rates { get; set; } = new();
@@ -78,16 +75,11 @@ public sealed class ClearStore
     public static string ScoringOf(string client, string mods) =>
         client != "stable" || mods.Contains("V2", StringComparison.OrdinalIgnoreCase) ? "v2" : "v1";
 
-    public static string ScoringLabel(string scoring) => scoring == "v1" ? "stable" : "lazer/V2";
-
     public static string RateKey(double rate) => Math.Round(rate, 2).ToString("0.0#", CultureInfo.InvariantCulture);
 
     public static string TotalLabel(ClearRecord r) => r.TotalMode == "custom"
         ? $"TOTAL custom {r.Total:0.##}"
         : $"TOTAL {r.TotalMode} {r.Total:0.#}";
-
-    /// <summary>The newest record, for the app's "last result" line.</summary>
-    public (MapRecord Map, string Rate, ClearRecord Record)? Last { get; private set; }
 
     /// <summary>
     /// Takes a {type:"result"} message from the gauge overlay. Returns false when it was a repeat.
@@ -103,7 +95,6 @@ public sealed class ClearStore
         var lamp = Str("lamp");
         if (checksum.Length == 0 || Rank(lamp) < 0) return false;
 
-        var beatmap = m.TryGetProperty("beatmap", out var b) ? b : default;
         var total = m.TryGetProperty("total", out var t) ? t : default;
         var record = new ClearRecord
         {
@@ -128,24 +119,16 @@ public sealed class ClearStore
         lock (gate)
         {
             if (!db.Maps.TryGetValue(checksum, out var map)) db.Maps[checksum] = map = new MapRecord();
-            map.Title = Str2(beatmap, "title", map.Title);
-            map.Artist = Str2(beatmap, "artist", map.Artist);
-            map.Version = Str2(beatmap, "version", map.Version);
-            map.Mapper = Str2(beatmap, "mapper", map.Mapper);
             if (Num(m, "keys") is > 0 and var k) map.Keys = (int)k;
 
             if (!map.Rates.TryGetValue(rate, out var list)) map.Rates[rate] = list = new List<ClearRecord>();
             // The overlay can report the same results screen twice (reconnects, several overlays)
             if (list.Any(x => x.Scoring == record.Scoring && x.Lamp == record.Lamp && x.ExScore == record.ExScore && (record.Date - x.Date).TotalMinutes < 2)) return false;
             list.Add(record);
-            Last = (map, rate, record);
             JsonFile.Save(Paths.ClearsFile, db);
         }
         Changed?.Invoke(checksum);
         return true;
-
-        static string Str2(JsonElement e, string name, string fallback) =>
-            e.ValueKind == JsonValueKind.Object && e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String && v.GetString() is { Length: > 0 } s ? s : fallback;
     }
 
     /// <summary>BAD + POOR + empty POOR</summary>

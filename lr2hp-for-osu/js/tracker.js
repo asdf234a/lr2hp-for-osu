@@ -359,7 +359,6 @@ export class PlayTracker {
             counts: s.counts,
             emptyPoor: s.emptyPoor,
             maxCombo: s.maxCombo,
-            beatmap: { title: b.titleUnicode || b.title || '', artist: b.artistUnicode || b.artist || '', version: b.version || '', mapper: b.mapper || '' },
         }));
     }
 

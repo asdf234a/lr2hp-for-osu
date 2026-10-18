@@ -150,7 +150,6 @@
         </ItemsControl>
 
         <TextBlock Classes="secondary mono" FontSize="11" Text="{Binding KeysText}" ToolTip.Tip="{Binding KeysDetails}" TextTrimming="CharacterEllipsis" />
-        <TextBlock Classes="muted" FontSize="11" Text="{Binding LastResult}" IsVisible="{Binding HasLastResult}" TextTrimming="CharacterEllipsis" />
       </StackPanel>
     </StackPanel>
   </Grid>
