@@ -112,3 +112,59 @@ test('a stray tap just before a hit in another lane stays an empty POOR', () => 
     assert.deepEqual(r.map((x) => x.result), ['empty']);
     assert.equal(c.stats.hit, 1);
 });
+
+// Chords: three keys go down together but only two lanes have notes
+function chordCase(order, offsets, extra = []) {
+    const notes = [
+        { time: 1000, end: 1000, hold: false, column: 1 },
+        { time: 1000, end: 1000, hold: false, column: 5 },
+        ...extra,
+    ].sort((a, b) => a.time - b.time);
+    const c = new PressClassifier({ keys: 7, notes }, { early: EARLY, late: LATE, songTime: (w) => w });
+    for (const lane of order) c.press(lane, 1003);
+    c.hitErrors(offsets, 1006);
+    return c.tick(1300).map((x) => x.result);
+}
+
+test('chord with an extra key: the extra key is an empty POOR whatever the press order', () => {
+    for (const order of [[3, 1, 5], [1, 3, 5], [1, 5, 3], [5, 3, 1]]) {
+        assert.deepEqual(chordCase(order, [3, 3]), ['empty'], `order ${order}`);
+        assert.deepEqual(chordCase(order, [2, 4]), ['empty'], `order ${order}`);
+    }
+});
+
+test('chord with an extra key whose lane has a note soon: early MISS, as osu! scores it', () => {
+    const soon = [{ time: 1150, end: 1150, hold: false, column: 3 }];
+    assert.deepEqual(chordCase([3, 1, 5], [3, 3], soon), ['earlyMiss']);
+});
+
+test('chord in a dense 7K stream with an extra key each time', () => {
+    const rand = rng(9);
+    const notes = [];
+    const presses = [];
+    let t = 1000;
+    for (let i = 0; i < 200; i++) {
+        t += 150 + Math.floor(rand() * 100);
+        const lanes = [...Array(7).keys()].sort(() => rand() - 0.5);
+        const [a, b, stray] = lanes;
+        notes.push({ time: t, end: t, hold: false, column: a }, { time: t, end: t, hold: false, column: b });
+        const jitter = () => Math.round((rand() * 2 - 1) * 20);
+        for (const lane of [stray, a, b].sort(() => rand() - 0.5)) presses.push({ t: t + jitter(), lane });
+    }
+    notes.sort((x, y) => x.time - y.time);
+    presses.sort((x, y) => x.t - y.t);
+    const chart = { keys: 7, notes };
+    const truth = referenceJudge(chart, presses);
+    const c = new PressClassifier(chart, { early: EARLY, late: LATE, songTime: (w) => w });
+    const entries = presses.map((p, k) => ({ wall: p.t + 2, off: truth[k].off })).filter((e, k) => truth[k].kind === 'hit');
+    let empties = 0;
+    for (let w = 0, pi = 0, ei = 0; w < t + 1000; w += 15) {
+        while (pi < presses.length && presses[pi].t <= w) c.press(presses[pi].lane, presses[pi++].t);
+        const batch = [];
+        while (ei < entries.length && entries[ei].wall <= w) batch.push(entries[ei++].off);
+        if (batch.length) c.hitErrors(batch, w);
+        empties += c.tick(w).filter((r) => r.result === 'empty').length;
+    }
+    const expected = truth.filter((r) => r.kind === 'empty').length;
+    assert.equal(empties, expected, JSON.stringify({ empties, expected }));
+});
