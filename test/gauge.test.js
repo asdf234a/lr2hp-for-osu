@@ -35,32 +35,54 @@ test('easy uses 1.2x recovery and 0.8x damage', () => {
     close(g.value, 20.36 - 1.6);
 });
 
-test('hard: fixed recovery, guts below 30%, dies at 0 for good', () => {
+test('hard: fixed recovery, guts below 32%, dies below 2% for good', () => {
     // TOTAL >= 240 and N >= 1000 keep the damage modifier at 1
     const g = new Gauge('hard', 1000, 300);
     g.update(PR);
     close(g.value, 90);
-    g.value = 29;
+    g.value = 33;
     g.update(PR);
-    close(g.value, 29 - 6);
-    g.value = 2;
+    close(g.value, 23);
+    g.value = 31;
     g.update(PR);
+    close(g.value, 31 - 6);
+    g.value = 3;
+    g.update(MS); // 3 - 2 * 0.6 = 1.8, under 2%
     assert.equal(g.value, 0);
     g.update(PG);
     assert.equal(g.value, 0);
     assert.equal(g.isQualified(), false);
 });
 
-test('hard damage grows with low TOTAL (beatoraja MODIFY_DAMAGE)', () => {
-    const g = new Gauge('hard', 1000, 200);
-    close(g.inc[PR], -10 * 1.5);
-    close(g.inc[PG], 0.1);
+test('hard damage grows with low TOTAL (LR2oraja MODIFY_DAMAGE)', () => {
+    close(new Gauge('hard', 1000, 240).inc[PR], -10);
+    close(new Gauge('hard', 1000, 200).inc[PR], -10 * 10 / 7); // floor(200/16) - 5 = 7
+    close(new Gauge('hard', 1000, 160).inc[PR], -20);
+    close(new Gauge('hard', 1000, 100).inc[PR], -100);
+    close(new Gauge('hard', 1000, 200).inc[PG], 0.1);
+});
+
+test('ex-hard dies once it falls under 2%', () => {
+    const g = new Gauge('exhard', 1000, 300);
+    for (let i = 0; i < 4; i++) g.update(PR);
+    close(g.value, 20);
+    g.update(BD); // 20 - 12 = 8
+    close(g.value, 8);
+    g.update(MS);
+    g.update(MS);
+    g.update(MS); // 2
+    close(g.value, 2);
+    g.update(PG); // still alive at exactly 2
+    g.update(MS); // 0.1 left -> under 2 -> dead
+    assert.equal(g.value, 0);
 });
 
 test('hard damage grows on short charts (LR2: x2 at 500, x3 at 250)', () => {
     close(new Gauge('hard', 500, 300).inc[PR], -20);
     close(new Gauge('hard', 250, 300).inc[PR], -30);
     close(new Gauge('exhard', 300, 300).inc[BD], -12 * 2.8);
+    close(new Gauge('hard', 100, 300).inc[PR], -10 * (4 + 25 / 65));
+    close(new Gauge('hard', 20, 300).inc[PR], -100);
     close(new Gauge('hard', 1000, 300).inc[PR], -10);
     // recovery is untouched
     close(new Gauge('hard', 250, 300).inc[PG], 0.1);

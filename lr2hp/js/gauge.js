@@ -1,4 +1,4 @@
-// LR2 gauge rules, ported from beatoraja's GaugeProperty.LR2 / GrooveGauge.
+// LR2 gauge rules, ported from LR2oraja Endless Dream 0.4.0 (GaugeProperty.LR2 / GrooveGauge).
 // Judge indices follow beatoraja: PG, GR, GD, BD, POOR (missed note), MISS (empty POOR).
 
 export const PG = 0, GR = 1, GD = 2, BD = 3, PR = 4, MS = 5;
@@ -20,11 +20,12 @@ export const CLEAR_LABEL = {
     easy: 'EASY CLEAR',
 };
 
+// death: the gauge drops straight to 0 (failed) once it falls below this
 const LR2_GAUGES = {
-    easy:   { modifier: 'total',        min: 2, max: 100, init: 20,  border: 80, value: [1.2, 1.2, 0.6, -3.2, -4.8, -1.6], guts: [] },
-    groove: { modifier: 'total',        min: 2, max: 100, init: 20,  border: 80, value: [1.0, 1.0, 0.5, -4.0, -6.0, -2.0], guts: [] },
-    hard:   { modifier: 'modifyDamage', min: 0, max: 100, init: 100, border: 0,  value: [0.1, 0.1, 0.05, -6.0, -10.0, -2.0], guts: [[30, 0.6]] },
-    exhard: { modifier: 'modifyDamage', min: 0, max: 100, init: 100, border: 0,  value: [0.1, 0.1, 0.05, -12.0, -20.0, -2.0], guts: [] },
+    easy:   { modifier: 'total',        min: 2, max: 100, init: 20,  border: 80, death: 0, value: [1.2, 1.2, 0.6, -3.2, -4.8, -1.6], guts: [] },
+    groove: { modifier: 'total',        min: 2, max: 100, init: 20,  border: 80, death: 0, value: [1.0, 1.0, 0.5, -4.0, -6.0, -2.0], guts: [] },
+    hard:   { modifier: 'modifyDamage', min: 0, max: 100, init: 100, border: 0,  death: 2, value: [0.1, 0.1, 0.05, -6.0, -10.0, -2.0], guts: [[32, 0.6]] },
+    exhard: { modifier: 'modifyDamage', min: 0, max: 100, init: 100, border: 0,  death: 2, value: [0.1, 0.1, 0.05, -12.0, -20.0, -2.0], guts: [] },
 };
 
 export function isSurvivalGauge(type) {
@@ -54,24 +55,19 @@ const MODIFIERS = {
     total(f, total, notes) {
         return f > 0 ? f * total / notes : f;
     },
-    // Damage grows for low TOTAL or short charts (beatoraja MODIFY_DAMAGE)
+    // Damage grows for TOTAL under 240 or charts under 1000 notes (LR2oraja MODIFY_DAMAGE)
     modifyDamage(f, total, notes) {
         if (f >= 0) return f;
-        const fix1total = [240.0, 230.0, 210.0, 200.0, 180.0, 160.0, 150.0, 130.0, 120.0, 0];
-        const fix1table = [1.0, 1.11, 1.25, 1.5, 1.666, 2.0, 2.5, 3.333, 5.0, 10.0];
-        let i = 0;
-        for (; i < fix1total.length - 1 && total < fix1total[i]; i++);
-        // Short charts: x2 at 500 notes, x3 at 250, ... (LR2). beatoraja writes this
-        // loop with `||`, which drives fix2 negative and disables it; `&&` is the LR2 rule.
-        let fix2 = 1.0;
-        let note = 1000;
-        let mod = 0.002;
-        while (note > notes && note > 1) {
-            fix2 += mod * (note - Math.max(notes, Math.trunc(note / 2)));
-            note = Math.trunc(note / 2);
-            mod *= 2.0;
-        }
-        return f * Math.max(fix1table[i], fix2);
+        const fix1 = 10 / Math.min(10, Math.max(1, Math.floor(total / 16) - 5));
+        let fix2 = 1;
+        if (notes <= 20) fix2 = 10;
+        else if (notes < 30) fix2 = 8 + 0.2 * (30 - notes);
+        else if (notes < 60) fix2 = 5 + 0.2 * (60 - notes) / 3;
+        else if (notes < 125) fix2 = 4 + (125 - notes) / 65;
+        else if (notes < 250) fix2 = 3 + 0.008 * (250 - notes);
+        else if (notes < 500) fix2 = 2 + 0.004 * (500 - notes);
+        else if (notes < 1000) fix2 = 1 + 0.002 * (1000 - notes);
+        return f * Math.max(fix1, fix2);
     },
 };
 
@@ -89,6 +85,7 @@ export class Gauge {
         // A survival gauge that hit 0 stays dead
         if (this.value > 0) {
             this.value = Math.min(Math.max(v, this.prop.min), this.prop.max);
+            if (this.value < this.prop.death) this.value = 0;
         }
     }
 
