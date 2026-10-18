@@ -1,6 +1,6 @@
 {
   "name": "lr2hp-for-osu",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "private": true,
   "type": "module",
   "description": "LR2-style HP gauge overlay for osu!mania on tosu",
