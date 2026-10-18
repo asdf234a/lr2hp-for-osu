@@ -1,5 +1,5 @@
 // Play simulator for checking empty POOR detection against osu!mania's rules.
-import { PressClassifier } from '../lr2hp/js/presses.js';
+import { PressClassifier } from '../lr2hp-for-osu/js/presses.js';
 
 export const EARLY = 164; // miss window, OD8
 export const LATE = 127; // 50 window, OD8

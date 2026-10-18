@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { Gauge, GaugeSet, computeTotal, PG, GR, GD, BD, PR, MS } from '../lr2hp/js/gauge.js';
+import { Gauge, GaugeSet, computeTotal, PG, GR, GD, BD, PR, MS } from '../lr2hp-for-osu/js/gauge.js';
 
 const close = (a, b, eps = 1e-9) => assert.ok(Math.abs(a - b) < eps, `${a} != ${b}`);
 

@@ -1,7 +1,7 @@
 # Draws the app icon, flat: an LR2 groove gauge, blue up to the 80% border and red
 # past it, on a plain dark rounded tile. Writes a multi-size .ico and a 256 px .png.
 #
-#   python tools/make_icon.py app/LR2HP/Assets [--preview]
+#   python tools/make_icon.py app/lr2hp-for-osu/Assets [--preview]
 import os
 import sys
 from PIL import Image, ImageDraw
@@ -35,7 +35,7 @@ small = draw_icon(n=5, border=4, gap=36)
 sizes = [16, 24, 32, 48, 64, 128, 256]
 frames = [(small if s <= 32 else big).resize((s, s), Image.LANCZOS) for s in sizes]
 frames[-1].save(os.path.join(out_dir, 'icon.png'))
-frames[-1].save(os.path.join(out_dir, 'LR2HP.ico'), sizes=[(s, s) for s in sizes], append_images=frames[:-1])
+frames[-1].save(os.path.join(out_dir, 'lr2hp-for-osu.ico'), sizes=[(s, s) for s in sizes], append_images=frames[:-1])
 
 if '--preview' in sys.argv:
     preview = Image.new('RGBA', (256 + 128 + 64 + 32 + 16 + 4 * 16, 256), (40, 40, 40, 255))

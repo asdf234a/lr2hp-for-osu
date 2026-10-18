@@ -2,7 +2,7 @@ namespace LR2HP.Core;
 
 /// <summary>
 /// osu!'s own key names turned into the names the overlay's key layouts use
-/// (letters, digits, Space, LShift, ; ' [ ] and so on; see lr2hp/js/notes.js).
+/// (letters, digits, Space, LShift, ; ' [ ] and so on; see lr2hp-for-osu/js/notes.js).
 /// </summary>
 public static class KeyNames
 {

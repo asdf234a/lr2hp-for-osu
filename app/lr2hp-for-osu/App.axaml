@@ -9,6 +9,6 @@
         <ColorPaletteResources x:Key="Light" Accent="#3A4250" />
       </FluentTheme.Palettes>
     </FluentTheme>
-    <StyleInclude Source="avares://LR2HP/UI/AppStyles.axaml" />
+    <StyleInclude Source="avares://lr2hp-for-osu/UI/AppStyles.axaml" />
   </Application.Styles>
 </Application>

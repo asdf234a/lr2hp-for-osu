@@ -1,0 +1,8 @@
+Usecase: obs-overlay, ingame
+Name: lr2hp-for-osu Empty POOR
+Version: 0.1.0
+Author: asdf234a
+CompatibleWith: tosu
+Resolution: 200x60
+authorLinks: https://github.com/asdf234a/lr2hp-for-osu
+Notes: Flashes the beatoraja skin's POOR judge image (Iridium by default) for 500 ms on every empty POOR. Needs the lr2hp-for-osu overlay (lr2hp-for-osu folder) installed next to it; key layout and empty POOR settings are read from that overlay.

@@ -1,7 +1,7 @@
 node_modules/
 *.log
 .claude/settings.local.json
-lr2hp-emptypoor/skins/judge/
+lr2hp-for-osu-emptypoor/skins/judge/
 app/**/bin/
 app/**/obj/
 app/publish/

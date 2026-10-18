@@ -8,7 +8,7 @@ internal static class Program
     private static void Main(string[] args)
     {
         // One instance: a second one couldn't open the overlay port anyway
-        using var mutex = new Mutex(true, @"Local\LR2HP", out var first);
+        using var mutex = new Mutex(true, @"Local\lr2hp-for-osu", out var first);
         if (!first) return;
         BuildAvaloniaApp().StartWithClassicDesktopLifetime(args);
     }

@@ -1,13 +1,13 @@
 // BMS-style score dashboard: rank, EX score, score rate, judge counts with
 // FAST/SLOW and max combo, drawn with the beatoraja simple-play counter images.
-// Play tracking is shared with the LR2HP for osu gauge overlay (../lr2hp).
+// Play tracking is shared with the lr2hp-for-osu gauge overlay (../lr2hp).
 
-import { PlayTracker, GAMEPLAY_DEFAULTS, settingsFromUrl, watchSettings } from '../../lr2hp/js/tracker.js';
-import { rankIndex } from '../../lr2hp/js/session.js';
-import { PG, GR, GD, BD, PR, MS } from '../../lr2hp/js/gauge.js';
+import { PlayTracker, GAMEPLAY_DEFAULTS, settingsFromUrl, watchSettings } from '../../lr2hp-for-osu/js/tracker.js';
+import { rankIndex } from '../../lr2hp-for-osu/js/session.js';
+import { PG, GR, GD, BD, PR, MS } from '../../lr2hp-for-osu/js/gauge.js';
 
 const LOOK_DEFAULTS = {
-    gaugeOverlay: 'lr2hp',
+    gaugeOverlay: 'lr2hp-for-osu',
     counter: 'default',
     rank: 'noto',
     showRank: true,

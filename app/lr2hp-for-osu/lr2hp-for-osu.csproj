@@ -6,22 +6,22 @@
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-    <AssemblyName>LR2HP</AssemblyName>
+    <AssemblyName>lr2hp-for-osu</AssemblyName>
     <RootNamespace>LR2HP</RootNamespace>
     <Version>0.1.0</Version>
-    <Product>LR2HP for osu</Product>
-    <AssemblyTitle>LR2HP for osu</AssemblyTitle>
+    <Product>lr2hp-for-osu</Product>
+    <AssemblyTitle>lr2hp-for-osu</AssemblyTitle>
     <DebugType>none</DebugType>
     <SelfContained>false</SelfContained>
     <PublishSingleFile>true</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ApplicationIcon>Assets\LR2HP.ico</ApplicationIcon>
+    <ApplicationIcon>Assets\lr2hp-for-osu.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
     <!-- The window's own icon (title bar / taskbar), not just the exe's. Drawn by tools/make_icon.py -->
-    <AvaloniaResource Include="Assets\LR2HP.ico" />
+    <AvaloniaResource Include="Assets\lr2hp-for-osu.ico" />
   </ItemGroup>
 
   <ItemGroup>

@@ -10,7 +10,7 @@ from PIL import Image
 if len(sys.argv) < 2:
     sys.exit(__doc__ or 'usage: import_judges.py <customize/judge folder> [output folder]')
 src = sys.argv[1]
-dst = sys.argv[2] if len(sys.argv) > 2 else os.path.join(os.path.dirname(__file__), '..', 'lr2hp-emptypoor', 'skins', 'judge')
+dst = sys.argv[2] if len(sys.argv) > 2 else os.path.join(os.path.dirname(__file__), '..', 'lr2hp-for-osu-emptypoor', 'skins', 'judge')
 
 DEFAULTS = {
     'JUDGEF_WIDTH': 180, 'JUDGEF_HEIGHT': 50, 'DIVY_F_PR': 1,

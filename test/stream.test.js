@@ -2,7 +2,7 @@
 // osu!mania judge and makes sure the classifier finds every empty POOR.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PressClassifier } from '../lr2hp/js/presses.js';
+import { PressClassifier } from '../lr2hp-for-osu/js/presses.js';
 
 const EARLY = 164; // miss window, OD8
 const LATE = 127; // 50 window, OD8

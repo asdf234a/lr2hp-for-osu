@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { PlaySession, rankIndex, RANKS } from '../lr2hp/js/session.js';
-import { maniaWindows } from '../lr2hp/js/notes.js';
-import { PG, GR, GD, BD, MS } from '../lr2hp/js/gauge.js';
+import { PlaySession, rankIndex, RANKS } from '../lr2hp-for-osu/js/session.js';
+import { maniaWindows } from '../lr2hp-for-osu/js/notes.js';
+import { PG, GR, GD, BD, MS } from '../lr2hp-for-osu/js/gauge.js';
 
 test('BMS rank thresholds', () => {
     const r = (rate) => RANKS[rankIndex(rate)];

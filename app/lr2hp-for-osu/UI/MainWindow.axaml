@@ -2,8 +2,8 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         x:Class="LR2HP.UI.MainWindow"
         x:CompileBindings="False"
-        Title="LR2HP for osu"
-        Icon="avares://LR2HP/Assets/LR2HP.ico"
+        Title="lr2hp-for-osu"
+        Icon="avares://lr2hp-for-osu/Assets/lr2hp-for-osu.ico"
         Width="380"
         SizeToContent="Height"
         CanResize="False"
@@ -56,7 +56,7 @@
               <Path Width="15" Height="13" Stretch="Uniform" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
                     Data="M3,6 L3,19 L21,19 L21,8 L11,8 L9,5 L3,5 Z" />
             </Button>
-            <Button Classes="ghost" MinHeight="32" Padding="8,0" Click="CloseApp" ToolTip.Tip="Close LR2HP for osu">
+            <Button Classes="ghost" MinHeight="32" Padding="8,0" Click="CloseApp" ToolTip.Tip="Close lr2hp-for-osu">
               <Button.Background>
                 <SolidColorBrush Color="{DynamicResource BannerScrim62Color}" />
               </Button.Background>

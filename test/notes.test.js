@@ -1,8 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseOsuMania, judgementCount, parseLayout, keyNameToVk } from '../lr2hp/js/notes.js';
-import { PlaySession, hitsToCounts } from '../lr2hp/js/session.js';
-import { SongClock } from '../lr2hp/js/clock.js';
+import { parseOsuMania, judgementCount, parseLayout, keyNameToVk } from '../lr2hp-for-osu/js/notes.js';
+import { PlaySession, hitsToCounts } from '../lr2hp-for-osu/js/session.js';
+import { SongClock } from '../lr2hp-for-osu/js/clock.js';
 
 const OSU = `osu file format v14
 

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseOsuMania } from '../lr2hp/js/notes.js';
-import { PressClassifier } from '../lr2hp/js/presses.js';
+import { parseOsuMania } from '../lr2hp-for-osu/js/notes.js';
+import { PressClassifier } from '../lr2hp-for-osu/js/presses.js';
 
 // 4K chart: lane 0 at 1000 and 3000, lane 1 at 1000, lane 3 at 2000
 const OSU = `[General]

@@ -1,31 +1,31 @@
-# LR2HP for osu
-<img src="app/LR2HP/Assets/icon.png" width="96" alt="LR2HP for osu icon">
+# lr2hp-for-osu
+<img src="app/lr2hp-for-osu/Assets/icon.png" width="96" alt="lr2hp-for-osu icon">
 
 osu!lazer 매니아용 LR2 HP 게이지 [tosu](https://github.com/tosuapp/tosu) 오버레이입니다.
 판정은 osu!에서 받아 LR2 게이지 규칙으로 다시 계산하고, 노트에 맞지 않은 키 입력은 공POOR로 처리합니다.
 
 - EX-HARD / HARD / GROOVE / EASY 게이지를 동시에 계산하고 GAS(게이지 오토 시프트)로 표시합니다.
 - 게이지 그림은 beatoraja `simple-play` 스킨의 `customize/gauge`(simple2 / simple / default)를 그대로 씁니다.
-- **대시보드 오버레이**(`lr2hp-dashboard`): BMS 기준 랭크, EX 스코어, 스코어 레이트, 판정 카운트(FAST/SLOW 포함), MAX 콤보를 같은 스킨의 카운터·랭크 이미지로 보여줍니다.
-- **공POOR 표시 오버레이**(`lr2hp-emptypoor`): 공POOR가 날 때마다 스킨의 POOR 판정 이미지(기본 Iridium의 MISS)를 beatoraja처럼 500ms 동안 띄웁니다.
-- **LR2HP.exe**: 키 입력 헬퍼, osu! 키 설정 동기화, 클리어 램프 기록을 맡는 작은 앱입니다. 기록과 설정은 exe와 같은 폴더에만 저장합니다.
+- **대시보드 오버레이**(`lr2hp-for-osu-dashboard`): BMS 기준 랭크, EX 스코어, 스코어 레이트, 판정 카운트(FAST/SLOW 포함), MAX 콤보를 같은 스킨의 카운터·랭크 이미지로 보여줍니다.
+- **공POOR 표시 오버레이**(`lr2hp-for-osu-emptypoor`): 공POOR가 날 때마다 스킨의 POOR 판정 이미지(기본 Iridium의 MISS)를 beatoraja처럼 500ms 동안 띄웁니다.
+- **lr2hp-for-osu.exe**: 키 입력 헬퍼, osu! 키 설정 동기화, 클리어 램프 기록을 맡는 작은 앱입니다. 기록과 설정은 exe와 같은 폴더에만 저장합니다.
 - 대상: osu!lazer, 1~7K. 키 설정 동기화는 stable도 지원합니다.
 
 ## 설치
 
-1. `lr2hp`, `lr2hp-dashboard`, `lr2hp-emptypoor` 폴더를 tosu의 `static` 폴더에 복사합니다. 예: `tosu/static/lr2hp`
+1. `lr2hp-for-osu`, `lr2hp-for-osu-dashboard`, `lr2hp-for-osu-emptypoor` 폴더를 tosu의 `static` 폴더에 복사합니다. 예: `tosu/static/lr2hp-for-osu`
 2. 공POOR 표시 오버레이를 쓰려면 판정 이미지를 가져옵니다. 여러 스킨에서 모은 이미지라 레포에는 들어 있지 않습니다.
    ```
-   python tools/import_judges.py "<beatoraja>/skin/<simple-play>/customize/judge" "<tosu>/static/lr2hp-emptypoor/skins/judge"
+   python tools/import_judges.py "<beatoraja>/skin/<simple-play>/customize/judge" "<tosu>/static/lr2hp-for-osu-emptypoor/skins/judge"
    ```
-3. `LR2HP.exe`를 원하는 폴더(예: `tosu/LR2HP/`)에 두고 실행합니다. .NET 10 런타임이 필요합니다.
-4. tosu 대시보드(`http://127.0.0.1:24050`)에서 **LR2HP for osu**, **LR2HP for osu Dashboard**, **LR2HP for osu Empty POOR**를 찾아 설정합니다.
+3. `lr2hp-for-osu.exe`를 원하는 폴더(예: `tosu/lr2hp-for-osu/`)에 두고 실행합니다. .NET 10 런타임이 필요합니다.
+4. tosu 대시보드(`http://127.0.0.1:24050`)에서 **lr2hp-for-osu**, **lr2hp-for-osu Dashboard**, **lr2hp-for-osu Empty POOR**를 찾아 설정합니다.
 5. OBS 브라우저 소스 URL
-   - 게이지: `http://127.0.0.1:24050/lr2hp/` (기본 크기 720x64. 폭은 게이지 길이 + 120px이며, 길이는 설정의 `Gauge length`로 바꿀 수 있습니다)
-   - 대시보드: `http://127.0.0.1:24050/lr2hp-dashboard/` (230x260)
-   - 공POOR 표시: `http://127.0.0.1:24050/lr2hp-emptypoor/` (Iridium 기준 76x32, 판정 이미지마다 다릅니다)
+   - 게이지: `http://127.0.0.1:24050/lr2hp-for-osu/` (기본 크기 720x64. 폭은 게이지 길이 + 120px이며, 길이는 설정의 `Gauge length`로 바꿀 수 있습니다)
+   - 대시보드: `http://127.0.0.1:24050/lr2hp-for-osu-dashboard/` (230x260)
+   - 공POOR 표시: `http://127.0.0.1:24050/lr2hp-for-osu-emptypoor/` (Iridium 기준 76x32, 판정 이미지마다 다릅니다)
 
-대시보드와 공POOR 표시 오버레이는 게이지 오버레이의 코드를 함께 쓰고, 키 배치와 공POOR 설정도 게이지 오버레이(**LR2HP for osu**) 쪽 설정을 그대로 읽습니다. 그래서 두 폴더를 나란히 설치해야 합니다.
+대시보드와 공POOR 표시 오버레이는 게이지 오버레이의 코드를 함께 쓰고, 키 배치와 공POOR 설정도 게이지 오버레이(**lr2hp-for-osu**) 쪽 설정을 그대로 읽습니다. 그래서 두 폴더를 나란히 설치해야 합니다.
 
 osu! 자체 HP로 실패하면 플레이가 끝나므로 **NF(No Fail)** 를 켜고 플레이하는 것을 권장합니다.
 
@@ -83,11 +83,11 @@ osu! 자체 HP로 실패하면 플레이가 끝나므로 **NF(No Fail)** 를 켜
 | 경우 | 입력 출처 |
 |---|---|
 | 1~4K | tosu만으로 동작 (`/websocket/v2/precise`의 키 카운터) |
-| 5~7K | **LR2HP.exe 필요** |
+| 5~7K | **lr2hp-for-osu.exe 필요** |
 
-tosu API는 키 카운터를 4개(`k1, k2, m1, m2`)까지만 내보내기 때문에 5K 이상은 tosu만으로는 알 수 없습니다. LR2HP.exe가 켜져 있으면 키 수와 상관없이 그 입력을 우선 사용합니다. 입력을 레인에 맞추는 키 배치는 LR2HP.exe가 osu! 설정에서 그대로 가져옵니다. 노트 입력은 hitErrors로 확정되므로 레인 배치가 틀려도 영향이 적지만, 공POOR와 이른 MISS 구분에는 레인이 쓰입니다.
+tosu API는 키 카운터를 4개(`k1, k2, m1, m2`)까지만 내보내기 때문에 5K 이상은 tosu만으로는 알 수 없습니다. lr2hp-for-osu.exe가 켜져 있으면 키 수와 상관없이 그 입력을 우선 사용합니다. 입력을 레인에 맞추는 키 배치는 lr2hp-for-osu.exe가 osu! 설정에서 그대로 가져옵니다. 노트 입력은 hitErrors로 확정되므로 레인 배치가 틀려도 영향이 적지만, 공POOR와 이른 MISS 구분에는 레인이 쓰입니다.
 
-## LR2HP.exe
+## lr2hp-for-osu.exe
 
 [Lazer Replay Compare](https://github.com/asdf234a/LazerReplayCompare)의 compact 창과 같은 모양의 작은 앱입니다(Avalonia, .NET 10, 단일 exe). 항상 위에 떠 있고, 창 아무 곳이나 끌어서 옮깁니다.
 
@@ -116,7 +116,7 @@ tosu API는 키 카운터를 4개(`k1, k2, m1, m2`)까지만 내보내기 때문
 ### 빌드
 
 ```
-dotnet publish app/LR2HP -c Release -o app/publish
+dotnet publish app/lr2hp-for-osu -c Release -o app/publish
 ```
 
 ## 한계
@@ -149,7 +149,7 @@ FAST/SLOW는 이렇게 셉니다.
 
 ## 미리보기 / 테스트
 
-- `lr2hp/index.html?demo=1`, `lr2hp-dashboard/index.html?demo=1`: tosu 없이 가짜 플레이로 화면을 확인합니다. URL 파라미터로 설정을 덮어쓸 수 있습니다. 예: `?demo=1&startGauge=HARD&parts=60`
+- `lr2hp-for-osu/index.html?demo=1`, `lr2hp-for-osu-dashboard/index.html?demo=1`: tosu 없이 가짜 플레이로 화면을 확인합니다. URL 파라미터로 설정을 덮어쓸 수 있습니다. 예: `?demo=1&startGauge=HARD&parts=60`
 - `npm test`: 게이지 계산, `.osu` 파싱, 입력 판별, 점수/랭크 단위 테스트
 - `?debug`: 브라우저 콘솔에서 `lr2hp.classifier.log`로 최근 입력 판별 기록을 볼 수 있습니다.
 

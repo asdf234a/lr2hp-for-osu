@@ -1,8 +1,8 @@
 Usecase: obs-overlay, ingame
-Name: LR2HP for osu
+Name: lr2hp-for-osu
 Version: 0.1.0
 Author: asdf234a
 CompatibleWith: tosu
 Resolution: 720x64
-authorLinks: https://github.com/asdf234a/lr2hp-tosuoverlay
+authorLinks: https://github.com/asdf234a/lr2hp-for-osu
 Notes: LR2-style HP gauge for osu!lazer mania (EX-HARD / HARD / GROOVE / EASY with gauge auto shift). Empty POOR works with tosu alone up to 4K; 5-7K need the key helper. See the README.
