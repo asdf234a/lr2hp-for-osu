@@ -107,6 +107,16 @@ export class PlayTracker {
         this.helper = null;
         this.helperPort = null;
         this.debugPresses = [];
+        this.listeners = { emptyPoor: [] };
+    }
+
+    // Events: 'emptyPoor' (fast) fires the moment an empty POOR is counted
+    on(name, fn) {
+        this.listeners[name]?.push(fn);
+    }
+
+    emit(name, ...args) {
+        for (const fn of this.listeners[name] || []) fn(...args);
     }
 
     start() {
@@ -224,7 +234,10 @@ export class PlayTracker {
     settlePresses(now) {
         if (!this.session || !this.classifier) return;
         for (const r of this.classifier.tick(now)) {
-            if (r.result === 'empty') this.session.addEmptyPoor(r.fast);
+            if (r.result === 'empty') {
+                this.session.addEmptyPoor(r.fast);
+                this.emit('emptyPoor', r.fast);
+            }
             else if (r.result === 'earlyMiss') this.session.earlyMisses++;
         }
     }
