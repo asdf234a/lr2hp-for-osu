@@ -1,6 +1,6 @@
 Usecase: obs-overlay, ingame
 Name: lr2hp-for-osu Dashboard
-Version: 0.1.0
+Version: 0.1.1
 Author: asdf234a
 CompatibleWith: tosu
 Resolution: 230x260
