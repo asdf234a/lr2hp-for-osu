@@ -5,7 +5,7 @@ osu!lazer 매니아용 LR2 HP 게이지 [tosu](https://github.com/tosuapp/tosu) 
 판정은 osu!에서 받아 LR2 게이지 규칙으로 다시 계산하고, 노트에 맞지 않은 키 입력은 공POOR로 처리합니다.
 
 - EX-HARD / HARD / GROOVE / EASY 게이지를 동시에 계산하고 GAS(게이지 오토 시프트)로 표시합니다.
-- 게이지 그림은 beatoraja `simple-play` 스킨의 `customize/gauge`(simple2 / simple / default)를 그대로 씁니다.
+- 게이지 스킨은 두 가지입니다. `flat`(기본, simple-play 수정본의 simple2)과 `classic`(simple-play v0.40 원본의 default, 광택 있는 빨강·청록 막대)입니다.
 - **대시보드 오버레이**(`lr2hp-for-osu-dashboard`): BMS 기준 랭크, EX 스코어, 스코어 레이트, 판정 카운트(FAST/SLOW 포함), MAX 콤보를 같은 스킨의 카운터·랭크 이미지로 보여줍니다.
 - **공POOR 표시 오버레이**(`lr2hp-for-osu-emptypoor`): 공POOR가 날 때마다 스킨의 POOR 판정 이미지(기본 Iridium의 MISS)를 beatoraja처럼 500ms 동안 띄웁니다.
 - **lr2hp-for-osu.exe**: 키 입력 헬퍼, osu! 키 설정 동기화, 클리어 램프 기록을 맡는 작은 앱입니다. 기록과 설정은 exe와 같은 폴더에만 저장합니다.
@@ -14,9 +14,9 @@ osu!lazer 매니아용 LR2 HP 게이지 [tosu](https://github.com/tosuapp/tosu) 
 ## 설치
 
 1. `lr2hp-for-osu`, `lr2hp-for-osu-dashboard`, `lr2hp-for-osu-emptypoor` 폴더를 tosu의 `static` 폴더에 복사합니다. 예: `tosu/static/lr2hp-for-osu`
-2. 공POOR 표시 오버레이를 쓰려면 판정 이미지를 가져옵니다. 여러 스킨에서 모은 이미지라 레포에는 들어 있지 않습니다.
+2. 공POOR 표시 오버레이를 쓰려면 판정 이미지(simple-play의 Iridium)를 `default`로 가져옵니다. 출처가 다른 스킨 이미지라 레포에는 들어 있지 않습니다.
    ```
-   python tools/import_judges.py "<beatoraja>/skin/<simple-play>/customize/judge" "<tosu>/static/lr2hp-for-osu-emptypoor/skins/judge"
+   python tools/import_judges.py "<beatoraja>/skin/<simple-play>/customize/judge" "<tosu>/static/lr2hp-for-osu-emptypoor/skins/judge" --only Iridium --as default
    ```
 3. `lr2hp-for-osu.exe`를 원하는 폴더(예: `tosu/lr2hp-for-osu/`)에 두고 실행합니다. .NET 10 런타임이 필요합니다.
 4. tosu 대시보드(`http://127.0.0.1:24050`)에서 **lr2hp-for-osu**, **lr2hp-for-osu Dashboard**, **lr2hp-for-osu Empty POOR**를 찾아 설정합니다.
@@ -97,8 +97,8 @@ tosu API는 키 카운터를 4개(`k1, k2, m1, m2`)까지만 내보내기 때문
   - stable: 게임 폴더의 `osu!.<Windows 사용자 이름>.cfg`에서 `ManiaLayoutsNK` 줄을 읽습니다.
   - 폴더는 tosu가 알려주는 경로(lazer는 `folders.songs`의 상위, stable은 `folders.game`)를 먼저 쓰고, 그 밖에는 `%APPDATA%\osu\storage.ini`와 레지스트리의 osu! 경로에서 찾습니다.
   - 오버레이는 지금 플레이 중인 클라이언트의 배치를 씁니다. 동기화된 배치가 없는 키 수는 설정의 키 배치(`7K keys` 등)를 쓰고, **Key layout source**를 `manual`로 바꾸면 항상 설정의 키 배치를 씁니다.
-- **클리어 램프 기록**: 게이지 오버레이가 결과 화면에서 클리어(GAS 범위 안에서 조건을 만족한 가장 높은 게이지)를 보내면, **맵(난이도 MD5) + 배속**별로 저장합니다. 기록에는 램프(EASY / CLEAR / HARD / EX-HARD), TOTAL 옵션과 값(standard / lr2 / beatoraja / custom), EX 스코어, 판정 수, 공POOR, 게이지별 최종값, 날짜가 들어갑니다.
-- **화면**: 연결 상태(tosu, 오버레이), 선택된 곡, 지금 배속의 기록 카드, 다른 배속의 램프, 쓰고 있는 키 배치를 보여줍니다. 기록 카드는 이렇게 생겼습니다.
+- **플레이 기록**: 게이지 오버레이가 결과 화면에 도달한 플레이를 보내면 **맵(난이도 MD5) + 배속**별로 저장합니다. 램프는 GAS 범위 안에서 조건을 만족한 가장 높은 게이지이고, 아무것도 만족하지 못하면 FAILED로 남깁니다. 기록에는 램프(FAILED / EASY / CLEAR / HARD / EX-HARD), TOTAL 옵션과 값(standard / lr2 / beatoraja / custom), EX 스코어, 판정 수, 공POOR, 게이지별 최종값, 날짜가 들어갑니다.
+- **화면**: 연결 상태(tosu, 오버레이), 선택된 곡, 지금 배속의 기록 카드, 다른 배속의 램프, 쓰고 있는 키 배치, 마지막으로 저장된 결과를 보여줍니다. 기록 카드는 이렇게 생겼습니다.
   - 왼쪽: 클리어 램프 바(EASY 초록, CLEAR 파랑, HARD 빨강, EX-HARD 노랑). 은은하게 깜빡이고, EX-HARD는 빠르게 깜빡입니다.
   - 가운데: 램프 이름, 그리고 그 배속의 최고 EX 스코어, 스코어 레이트, 최저 BP(BAD + POOR + 공POOR)
   - 오른쪽: BMS 랭크(AAA / AA / A …)와 가까운 랭크 경계까지의 점수. 예: `AAA-0006`(AAA까지 6점), `AA+0012`(AA보다 12점 위), `MAX-0004`(만점까지 4점)
@@ -107,7 +107,7 @@ tosu API는 키 카운터를 4개(`k1, k2, m1, m2`)까지만 내보내기 때문
 
 | 파일 | 내용 |
 |---|---|
-| `clears.json` | 클리어 기록 |
+| `clears.json` | 플레이 기록 (FAILED 포함) |
 | `keybinds.json` | 마지막으로 읽은 lazer / stable 키 배치 |
 | `settings.json` | 포트(24055), tosu 주소, 대상 프로세스 이름(`osu!`), 테마(`Dark` / `Light` / `System`), 창 위치 |
 

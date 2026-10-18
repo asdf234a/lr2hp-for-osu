@@ -1,0 +1,7 @@
+{
+    "name": "classic",
+    "source": "beatoraja skin simple-play v0.40 (mnpy), customize/gauge/default",
+    "segment": [12, 35],
+    "width": 12,
+    "rows": { "groove": 0, "hard": 0, "easy": 1, "exhard": 1 }
+}

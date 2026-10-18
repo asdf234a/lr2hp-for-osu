@@ -6,7 +6,7 @@ const DEFAULTS = {
     ...GAMEPLAY_DEFAULTS,
     parts: 50,
     length: 0,
-    skin: 'simple2',
+    skin: 'flat',
     scale: 1,
     showLabel: true,
     showAllGauges: false,
@@ -39,10 +39,11 @@ async function applySettings(next = {}) {
     document.documentElement.style.setProperty('--scale', Number(settings.scale) || 1);
     renderer.setLayout(Number(settings.parts) || 50, Number(settings.length) || 0);
     try {
-        await renderer.setSkin(settings.skin || 'simple2');
+        await renderer.setSkin(settings.skin || 'flat');
     } catch (e) {
+        // A skin that no longer exists (e.g. a saved "simple2") falls back to flat
         console.warn(e);
-        await renderer.setSkin('simple2');
+        await renderer.setSkin('flat');
     }
     els.root.style.width = `${renderer.width}px`;
     if (!demo) tracker.applySettings();

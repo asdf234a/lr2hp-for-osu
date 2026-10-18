@@ -1,16 +1,27 @@
 # Copies each judge set's POOR image (F_PR.png) and the judge.lua values the
 # empty POOR overlay needs from a beatoraja simple-play skin.
 #
-#   python tools/import_judges.py "<beatoraja>/skin/<simple-play>/customize/judge"
+#   python tools/import_judges.py "<beatoraja>/skin/<simple-play>/customize/judge" [out folder] [--only Iridium --as default]
 #
+# --only picks one judge set; --as gives it another folder name. Without them every set is copied.
 # The images come from many different skins, so they are not kept in the repo.
 import json, os, re, shutil, sys
 from PIL import Image
 
 if len(sys.argv) < 2:
     sys.exit(__doc__ or 'usage: import_judges.py <customize/judge folder> [output folder]')
-src = sys.argv[1]
-dst = sys.argv[2] if len(sys.argv) > 2 else os.path.join(os.path.dirname(__file__), '..', 'lr2hp-for-osu-emptypoor', 'skins', 'judge')
+args = [a for a in sys.argv[1:]]
+def take(flag):
+    if flag in args:
+        i = args.index(flag)
+        value = args[i + 1]
+        del args[i:i + 2]
+        return value
+    return None
+only = take('--only')
+rename = take('--as')
+src = args[0]
+dst = args[1] if len(args) > 1 else os.path.join(os.path.dirname(__file__), '..', 'lr2hp-for-osu-emptypoor', 'skins', 'judge')
 
 DEFAULTS = {
     'JUDGEF_WIDTH': 180, 'JUDGEF_HEIGHT': 50, 'DIVY_F_PR': 1,
@@ -26,6 +37,8 @@ def lua_numbers(text):
 
 sets = {}
 for name in sorted(os.listdir(src)):
+    if only and name != only:
+        continue
     folder = os.path.join(src, name)
     pr = os.path.join(folder, 'F_PR.png')
     lua = os.path.join(folder, 'judge.lua')
@@ -36,7 +49,7 @@ for name in sorted(os.listdir(src)):
     w, h = Image.open(pr).size
     if w < 4 or h < 4:
         continue
-    safe = re.sub(r'[^A-Za-z0-9_-]+', '_', name).strip('_') or 'judge'
+    safe = rename or re.sub(r'[^A-Za-z0-9_-]+', '_', name).strip('_') or 'judge'
     os.makedirs(os.path.join(dst, safe), exist_ok=True)
     shutil.copy(pr, os.path.join(dst, safe, 'F_PR.png'))
     sets[safe] = {

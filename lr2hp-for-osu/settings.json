@@ -22,9 +22,9 @@
     { "uniqueID": "keys10", "type": "text", "title": "10K keys", "description": "", "options": "", "value": "A S D F V N J K L ;" },
 
     { "uniqueID": "hlook", "type": "header", "title": "Look", "description": "", "options": "", "value": "" },
-    { "uniqueID": "skin", "type": "options", "title": "Skin", "description": "Gauge images from beatoraja simple-play.", "options": ["simple2", "simple", "default"], "value": "simple2" },
+    { "uniqueID": "skin", "type": "options", "title": "Skin", "description": "flat: simple-play's flat gauge. classic: simple-play's original default gauge, glossy red / cyan bars.", "options": ["flat", "classic"], "value": "flat" },
     { "uniqueID": "parts", "type": "number", "title": "Segments", "description": "LR2 uses 50 (2% each); the simple-play skin uses 60.", "options": "", "value": 50 },
-    { "uniqueID": "length", "type": "number", "title": "Gauge length (px)", "description": "Length of the bar, not counting the number. 0 = 12 px per segment (600 px at 50 segments).", "options": "", "value": 0 },
+    { "uniqueID": "length", "type": "number", "title": "Gauge length (px)", "description": "Length of the bar, not counting the number. 0 = the skin's own segment width (12 px per segment).", "options": "", "value": 0 },
     { "uniqueID": "scale", "type": "number", "title": "Scale", "description": "", "options": "", "value": 1 },
     { "uniqueID": "showLabel", "type": "checkbox", "title": "Show gauge name", "description": "", "options": "", "value": true },
     { "uniqueID": "showAllGauges", "type": "checkbox", "title": "Show all four gauges", "description": "Small readout of every gauge running in the background.", "options": "", "value": false },

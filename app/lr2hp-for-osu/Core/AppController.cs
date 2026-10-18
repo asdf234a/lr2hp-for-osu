@@ -88,6 +88,7 @@ public sealed class AppController : IDisposable
                 Changed?.Invoke();
                 break;
             case "clear":
+            case "result":
                 Clears.AddFromOverlay(root);
                 break;
         }

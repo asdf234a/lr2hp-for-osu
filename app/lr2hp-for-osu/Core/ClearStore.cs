@@ -6,7 +6,7 @@ namespace LR2HP.Core;
 /// <summary>One clear, as the gauge overlay reported it at the results screen.</summary>
 public sealed class ClearRecord
 {
-    /// <summary>"easy", "groove", "hard" or "exhard"</summary>
+    /// <summary>"failed", "easy", "groove", "hard" or "exhard"</summary>
     public string Lamp { get; set; } = "";
     public DateTime Date { get; set; }
     /// <summary>The overlay's TOTAL option: "standard", "lr2", "beatoraja" or "custom"</summary>
@@ -52,7 +52,7 @@ public sealed class ClearStore
 
     public event Action<string>? Changed;
 
-    public static readonly string[] Lamps = ["easy", "groove", "hard", "exhard"];
+    public static readonly string[] Lamps = ["failed", "easy", "groove", "hard", "exhard"];
 
     public static int Rank(string lamp) => Array.IndexOf(Lamps, lamp);
 
@@ -62,6 +62,7 @@ public sealed class ClearStore
         "hard" => "HARD CLEAR",
         "groove" => "CLEAR",
         "easy" => "EASY CLEAR",
+        "failed" => "FAILED",
         _ => "NO PLAY",
     };
 
@@ -71,7 +72,10 @@ public sealed class ClearStore
         ? $"TOTAL custom {r.Total:0.##}"
         : $"TOTAL {r.TotalMode} {r.Total:0.#}";
 
-    /// <summary>Takes a {type:"clear"} message from the gauge overlay. Returns false when it was a repeat.</summary>
+    /// <summary>The newest record, for the app's "last result" line.</summary>
+    public (MapRecord Map, string Rate, ClearRecord Record)? Last { get; private set; }
+
+    /// <summary>Takes a {type:"result"} message from the gauge overlay. Returns false when it was a repeat.</summary>
     public bool AddFromOverlay(JsonElement m)
     {
         string Str(string name) => m.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() ?? "" : "";
@@ -116,6 +120,7 @@ public sealed class ClearStore
             // The overlay can report the same results screen twice (reconnects, several overlays)
             if (list.Any(x => x.Lamp == record.Lamp && x.ExScore == record.ExScore && (record.Date - x.Date).TotalMinutes < 2)) return false;
             list.Add(record);
+            Last = (map, rate, record);
             JsonFile.Save(Paths.ClearsFile, db);
         }
         Changed?.Invoke(checksum);

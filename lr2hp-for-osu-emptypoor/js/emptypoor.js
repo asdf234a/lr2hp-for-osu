@@ -6,7 +6,7 @@ import { PlayTracker, GAMEPLAY_DEFAULTS, settingsFromUrl, watchSettings } from '
 
 const LOOK_DEFAULTS = {
     gaugeOverlay: 'lr2hp-for-osu',
-    judge: 'Iridium',
+    judge: 'default',
     trim: true,
     scale: 1,
     duration: 500,
@@ -87,7 +87,7 @@ async function loadJudge() {
         return;
     }
     note.textContent = '';
-    const name = names.includes(settings.judge) ? settings.judge : names.includes('Iridium') ? 'Iridium' : names[0];
+    const name = names.includes(settings.judge) ? settings.judge : names.includes('default') ? 'default' : names[0];
     const meta = judges[name];
     const image = await loadImage(`skins/judge/${encodeURIComponent(name)}/F_PR.png`);
     const frames = Math.max(1, meta.frames || 1);

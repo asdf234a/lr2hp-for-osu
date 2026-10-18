@@ -291,7 +291,7 @@ export class PlayTracker {
             const hits = data.resultsScreen?.hits;
             if (hits && !this.inResults) this.session.applyHits(hits, now);
             this.inResults = true;
-            this.sendClear(data);
+            this.sendResult(data);
             this.visible = true;
         } else {
             // Keep the last play around so it can stay on screen when hiding is off
@@ -329,18 +329,19 @@ export class PlayTracker {
         }
     }
 
-    // A cleared play goes to the lr2hp-for-osu app, which keeps the best lamp per map and rate
-    sendClear(data) {
+    // Every play that reaches the results screen goes to the lr2hp-for-osu app, which keeps
+    // the best lamp, EX score and BP per map and rate. Failed plays come as lamp "failed".
+    sendResult(data) {
         if (!this.reportClears || this.clearSent || !this.helperConnected || !this.helper) return;
         const s = this.session;
-        const lamp = s?.gauges.clearType();
-        if (!lamp) return;
+        if (!s || s.judged === 0) return;
+        const lamp = s.gauges.clearType() || 'failed';
         this.clearSent = true;
         const b = this.lastData?.beatmap || data.beatmap || {};
         const gauges = {};
         for (const [type, g] of Object.entries(s.gauges.gauges)) gauges[type] = Math.round(g.value * 100) / 100;
         this.helper.send(JSON.stringify({
-            type: 'clear',
+            type: 'result',
             checksum: b.checksum || '',
             client: this.client,
             keys: this.chart?.keys || 0,

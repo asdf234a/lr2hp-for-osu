@@ -1,8 +1,8 @@
-// Canvas renderer that draws the gauge the way beatoraja's SkinGauge does,
-// using the 8-node image layout from the simple-play skin.
+// Canvas renderer that draws the gauge the way beatoraja's SkinGauge does, using the
+// 8-node image layout beatoraja skins use. Each skin folder has gauge.png, num.png and
+// skin.json: { "segment": [w, h] of one node in gauge.png, "width": px per segment on
+// screen when the length setting is 0, "rows": which node row each gauge uses }.
 
-const SEG_W = 12;
-const SEG_H = 35;
 const NUM_W = 26;
 const NUM_H = 28;
 const DOT_X = 286;
@@ -13,7 +13,7 @@ const BAR_H = 36;
 
 // beatoraja's 8-node mapping: node row 0 (n1..n4) is used by GROOVE and HARD,
 // row 1 (e1..e4) by EASY and EX-HARD.
-const SKIN_ROW = { groove: 0, hard: 0, easy: 1, exhard: 1 };
+const DEFAULT_META = { segment: [12, 35], width: 12, rows: { groove: 0, hard: 0, easy: 1, exhard: 1 } };
 
 function loadImage(src) {
     return new Promise((resolve, reject) => {
@@ -29,7 +29,7 @@ export class GaugeRenderer {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         this.parts = 50;
-        this.length = 0; // bar length in px; 0 = 12 px per segment like the skin
+        this.length = 0; // bar length in px; 0 = the skin's own segment width
         this.skin = null;
         this.anim = 0;
         this.animUntil = 0;
@@ -41,9 +41,14 @@ export class GaugeRenderer {
     async setSkin(name) {
         if (this.skinName === name && this.skin) return;
         const base = `skins/${encodeURIComponent(name)}/`;
-        const [gauge, num] = await Promise.all([loadImage(base + 'gauge.png'), loadImage(base + 'num.png')]);
-        this.skin = { gauge, num };
+        const [gauge, num, meta] = await Promise.all([
+            loadImage(base + 'gauge.png'),
+            loadImage(base + 'num.png'),
+            fetch(base + 'skin.json').then((r) => (r.ok ? r.json() : {})).catch(() => ({})),
+        ]);
+        this.skin = { gauge, num, meta: { ...DEFAULT_META, ...meta, rows: { ...DEFAULT_META.rows, ...meta.rows } } };
         this.skinName = name;
+        this.setLayout(this.parts, this.length);
     }
 
     setLayout(parts, length = 0) {
@@ -54,7 +59,8 @@ export class GaugeRenderer {
     }
 
     get barWidth() {
-        return this.length > 0 ? Math.max(this.parts, this.length) : this.parts * SEG_W;
+        const segW = this.skin?.meta.width ?? DEFAULT_META.width;
+        return this.length > 0 ? Math.max(this.parts, this.length) : Math.round(this.parts * segW);
     }
 
     get width() {
@@ -63,10 +69,10 @@ export class GaugeRenderer {
 
     // Source rect of node `slot` (0 lit/above border, 1 lit/below, 2 dark/above, 3 dark/below)
     segmentSource(type, slot) {
-        const row = SKIN_ROW[type] ?? 0;
+        const { segment: [w, h], rows } = this.skin.meta;
         const img = this.skin.gauge;
-        const y = row * SEG_H;
-        return [slot * SEG_W, y, SEG_W, Math.min(SEG_H, img.height - y)];
+        const y = (rows[type] ?? 0) * h;
+        return [slot * w, y, w, Math.min(h, img.height - y)];
     }
 
     draw(gauge, now, { showNumber = true } = {}) {
