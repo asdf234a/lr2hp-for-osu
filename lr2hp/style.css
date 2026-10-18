@@ -1,0 +1,59 @@
+:root {
+    --scale: 1;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    overflow: hidden;
+}
+
+#root {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: scale(var(--scale));
+    transform-origin: 0 0;
+    transition: opacity 0.3s;
+}
+
+#root.hidden {
+    opacity: 0;
+}
+
+/* Text row shares the 28px band the skin number sits in, left of the number */
+.top {
+    position: absolute;
+    left: 4px;
+    top: 0;
+    height: 28px;
+    right: 120px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font: 700 20px/1 "Segoe UI", "Malgun Gothic", sans-serif;
+    color: #ddd;
+    text-shadow: 0 0 3px #000, 0 0 3px #000;
+    white-space: nowrap;
+    overflow: hidden;
+}
+
+.label.groove { color: #13d4dd; }
+.label.easy { color: #2cde2c; }
+.label.hard { color: #dedede; }
+.label.exhard { color: #dede2c; }
+.label.failed { color: #ff4a4a; }
+
+.all,
+.status {
+    font-size: 14px;
+    font-weight: 600;
+    color: #aaa;
+}
+
+#gauge {
+    display: block;
+    image-rendering: pixelated;
+}

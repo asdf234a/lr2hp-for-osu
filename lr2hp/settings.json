@@ -1,0 +1,29 @@
+[
+    { "uniqueID": "hgauge", "type": "header", "title": "Gauge", "description": "", "options": "", "value": "" },
+    { "uniqueID": "startGauge", "type": "options", "title": "Start gauge (GAS)", "description": "Gauge auto shift starts here and drops to the next gauge when this one fails.", "options": ["EX-HARD", "HARD", "GROOVE", "EASY"], "value": "EX-HARD" },
+    { "uniqueID": "bottomGauge", "type": "options", "title": "Bottom gauge (GAS)", "description": "Lowest gauge GAS can fall back to.", "options": ["EASY", "GROOVE", "HARD", "EX-HARD"], "value": "EASY" },
+    { "uniqueID": "totalMode", "type": "options", "title": "TOTAL formula", "description": "standard: 7.605N/(0.01N+6.5). lr2: 160+(N+clamp(N-400,0,200))*0.16. beatoraja: max(260, standard). custom: the value below.", "options": ["standard", "lr2", "beatoraja", "custom"], "value": "standard" },
+    { "uniqueID": "totalValue", "type": "number", "title": "Custom TOTAL", "description": "Used when the TOTAL formula is custom.", "options": "", "value": 300 },
+
+    { "uniqueID": "hpoor", "type": "header", "title": "Empty POOR", "description": "", "options": "", "value": "" },
+    { "uniqueID": "emptyPoor", "type": "checkbox", "title": "Count empty POOR", "description": "Key presses that don't land on a note. Works with tosu alone on lazer up to 4K; stable and 5K+ need keyhook/start-keyhook.bat running.", "options": "", "value": true },
+    { "uniqueID": "emptyPoorMode", "type": "options", "title": "Empty POOR mode", "description": "all: every stray press during the chart. near: only when the next note in that lane is within 500 ms.", "options": ["all", "near"], "value": "all" },
+    { "uniqueID": "keyHelperPort", "type": "number", "title": "Key helper port", "description": "", "options": "", "value": 24055 },
+    { "uniqueID": "inputOffset", "type": "number", "title": "Input offset (ms)", "description": "Added to key press times before matching them to notes.", "options": "", "value": 0 },
+    { "uniqueID": "keys4", "type": "text", "title": "4K keys", "description": "Space-separated, left to right. Letters, digits, Space, LShift, RShift, ; , . / [ ] etc.", "options": "", "value": "D F J K" },
+    { "uniqueID": "keys5", "type": "text", "title": "5K keys", "description": "", "options": "", "value": "D F Space J K" },
+    { "uniqueID": "keys6", "type": "text", "title": "6K keys", "description": "", "options": "", "value": "S D F J K L" },
+    { "uniqueID": "keys7", "type": "text", "title": "7K keys", "description": "", "options": "", "value": "S D F Space J K L" },
+    { "uniqueID": "keys8", "type": "text", "title": "8K keys", "description": "", "options": "", "value": "A S D F J K L ;" },
+    { "uniqueID": "keys9", "type": "text", "title": "9K keys", "description": "", "options": "", "value": "A S D F Space J K L ;" },
+    { "uniqueID": "keys10", "type": "text", "title": "10K keys", "description": "", "options": "", "value": "A S D F V N J K L ;" },
+
+    { "uniqueID": "hlook", "type": "header", "title": "Look", "description": "", "options": "", "value": "" },
+    { "uniqueID": "skin", "type": "options", "title": "Skin", "description": "Gauge images from beatoraja simple-play.", "options": ["simple2", "simple", "default"], "value": "simple2" },
+    { "uniqueID": "parts", "type": "number", "title": "Segments", "description": "LR2 uses 50 (2% each); the simple-play skin uses 60.", "options": "", "value": 50 },
+    { "uniqueID": "scale", "type": "number", "title": "Scale", "description": "", "options": "", "value": 1 },
+    { "uniqueID": "showLabel", "type": "checkbox", "title": "Show gauge name", "description": "", "options": "", "value": true },
+    { "uniqueID": "showAllGauges", "type": "checkbox", "title": "Show all four gauges", "description": "Small readout of every gauge running in the background.", "options": "", "value": false },
+    { "uniqueID": "showEmptyPoorStatus", "type": "checkbox", "title": "Show empty POOR status", "description": "Shows a note when empty POOR can't be detected.", "options": "", "value": true },
+    { "uniqueID": "hideOutsidePlay", "type": "checkbox", "title": "Hide outside play", "description": "", "options": "", "value": true }
+]
