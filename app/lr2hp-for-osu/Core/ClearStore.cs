@@ -205,6 +205,18 @@ public sealed class ClearStore
         }
     }
 
+    /// <summary>Forgets every record of one difficulty (all rates, lazer and stable), as if it was never played.</summary>
+    public bool DeleteMap(string checksum)
+    {
+        lock (gate)
+        {
+            if (!db.Maps.Remove(checksum)) return false;
+            JsonFile.Save(Paths.ClearsFile, db);
+        }
+        Changed?.Invoke(checksum);
+        return true;
+    }
+
     public int MapCount
     {
         get

@@ -139,6 +139,11 @@ public sealed partial class MainWindow : Window
         viewModel.Refresh();
     }
 
+    private void DeleteRecords(object? sender, RoutedEventArgs e)
+    {
+        if (app.Tosu.Current.Checksum is { Length: > 0 } checksum && app.Clears.DeleteMap(checksum)) viewModel.Refresh();
+    }
+
     private void OpenFolder(object? sender, RoutedEventArgs e)
     {
         try
