@@ -18,7 +18,9 @@ osu!lazer 매니아용 LR2 HP 게이지 [tosu](https://github.com/tosuapp/tosu) 
    ```
    python tools/import_judges.py "<beatoraja>/skin/<simple-play>/customize/judge" "<tosu>/static/lr2hp-for-osu-emptypoor/skins/judge" --only Iridium --as default
    ```
-3. `lr2hp-for-osu.exe`를 원하는 폴더(예: `tosu/lr2hp-for-osu/`)에 두고 실행합니다. .NET 10 런타임이 필요합니다.
+3. `lr2hp-for-osu.exe`를 원하는 폴더(예: `tosu/lr2hp-for-osu/`)에 두고 실행합니다. [.NET 10 데스크톱 런타임](https://dotnet.microsoft.com/download/dotnet/10.0)이 필요합니다.
+
+[Releases](https://github.com/asdf234a/lr2hp-for-osu/releases)에서 앱(`lr2hp-for-osu-app-*.zip`)과 오버레이 세 개(`lr2hp-for-osu-overlays-*.zip`)를 받을 수 있습니다.
 4. tosu 대시보드(`http://127.0.0.1:24050`)에서 **lr2hp-for-osu**, **lr2hp-for-osu Dashboard**, **lr2hp-for-osu Empty POOR**를 찾아 설정합니다.
 5. OBS 브라우저 소스 URL
    - 게이지: `http://127.0.0.1:24050/lr2hp-for-osu/` (기본 크기 720x64. 폭은 게이지 길이 + 120px이며, 길이는 설정의 `Gauge length`로 바꿀 수 있습니다)
@@ -60,7 +62,7 @@ osu! 자체 HP로 실패하면 플레이가 끝나므로 **NF(No Fail)** 를 켜
 
 ### GAS
 
-설정한 **시작 게이지**부터 **바닥 게이지**까지 중에서 지금 조건을 만족하는 가장 높은 게이지를 표시합니다. HARD 계열은 살아있으면, GROOVE와 EASY는 80% 이상이면 조건을 만족합니다. 아무것도 만족하지 못하면 바닥 게이지를 표시합니다. 결과 화면에서는 클리어 램프(EX-HARD CLEAR / HARD CLEAR / CLEAR / EASY CLEAR / FAILED)를 보여줍니다.
+설정한 **시작 게이지**부터 **바닥 게이지**까지 중에서 지금 조건을 만족하는 가장 높은 게이지를 표시합니다. HARD 계열은 살아있으면, GROOVE와 EASY는 80% 이상이면 조건을 만족합니다. 아무것도 만족하지 못하면 바닥 게이지를 표시합니다. 결과 화면에서는 게이지 클리어 램프(EX-HARD CLEAR / HARD CLEAR / CLEAR / EASY CLEAR / FAILED)를 보여줍니다.
 
 ## 공POOR
 
@@ -89,19 +91,24 @@ tosu API는 키 카운터를 4개(`k1, k2, m1, m2`)까지만 내보내기 때문
 
 ## lr2hp-for-osu.exe
 
-[Lazer Replay Compare](https://github.com/asdf234a/LazerReplayCompare)의 compact 창과 같은 모양의 작은 앱입니다(Avalonia, .NET 10, 단일 exe). 항상 위에 떠 있고, 창 아무 곳이나 끌어서 옮깁니다.
+[Lazer Replay Compare](https://github.com/asdf234a/LazerReplayCompare)의 compact 창과 같은 모양의 작은 앱입니다(Avalonia, .NET 10, 단일 exe). 창 아무 곳이나 끌어서 옮기고, 핀 버튼으로 항상 위 고정을 켜고 끕니다.
 
 - **키 입력 헬퍼**: `GetAsyncKeyState`로 키보드 상태를 1ms마다 읽어 osu! 창이 포커스일 때만 `ws://127.0.0.1:24055`로 오버레이에 보냅니다. 키 뷰어 프로그램과 같은 방식이라 osu! 프로세스의 메모리를 읽거나 쓰지 않고, DLL 주입이나 입력 전송도 하지 않습니다.
-- **키 설정 동기화 (lazer / stable)**: 켤 때, tosu가 다른 클라이언트에 붙을 때, ↻ 버튼을 누를 때 osu!의 매니아 키 설정을 읽어 오버레이에 보냅니다.
+- **키 설정 동기화 (lazer / stable)**: 켤 때, tosu가 다른 클라이언트에 붙을 때, 설정의 새로고침 버튼을 누를 때 osu!의 매니아 키 설정을 읽어 오버레이에 보냅니다.
   - lazer: 데이터 폴더의 `client.realm`을 레이저와 같은 Realm(20.1.0)으로 읽습니다. 게임이 쓰는 원본은 열지 않고 임시 복사본을 읽은 뒤 지웁니다.
   - stable: 게임 폴더의 `osu!.<Windows 사용자 이름>.cfg`에서 `ManiaLayoutsNK` 줄을 읽습니다.
   - 폴더는 tosu가 알려주는 경로(lazer는 `folders.songs`의 상위, stable은 `folders.game`)를 먼저 쓰고, 그 밖에는 `%APPDATA%\osu\storage.ini`와 레지스트리의 osu! 경로에서 찾습니다.
   - 오버레이는 지금 플레이 중인 클라이언트의 배치를 씁니다. 동기화된 배치가 없는 키 수는 설정의 키 배치(`7K keys` 등)를 쓰고, **Key layout source**를 `manual`로 바꾸면 항상 설정의 키 배치를 씁니다.
-- **플레이 기록**: 게이지 오버레이가 결과 화면에 도달한 플레이를 보내면 **맵(난이도 MD5) + 배속**별로 저장합니다. 램프는 GAS 범위 안에서 조건을 만족한 가장 높은 게이지이고, 아무것도 만족하지 못하면 FAILED로 남깁니다. 기록에는 램프(FAILED / EASY / CLEAR / HARD / EX-HARD), TOTAL 옵션과 값(standard / lr2 / beatoraja / custom), EX 스코어, 판정 수, 공POOR, 게이지별 최종값, 날짜가 들어갑니다.
-- **화면**: 연결 상태(tosu, 오버레이), 선택된 곡, 지금 배속의 기록 카드, 다른 배속의 램프, 쓰고 있는 키 배치, 마지막으로 저장된 결과를 보여줍니다. 기록 카드는 이렇게 생겼습니다.
-  - 왼쪽: 클리어 램프 바(EASY 초록, CLEAR 파랑, HARD 빨강, EX-HARD 노랑). 은은하게 깜빡이고, EX-HARD는 빠르게 깜빡입니다.
+- **플레이 기록**: 게이지 오버레이가 결과 화면에 도달한 플레이를 보내면 **맵(난이도 MD5) + 배속**별로 저장합니다. 지금 선택된 맵의 MD5는 tosu가 알려주므로 곡 이름은 따로 저장하지 않습니다.
+  - 램프는 GAS 범위 안에서 조건을 만족한 가장 높은 게이지이고, 아무것도 만족하지 못하면 FAILED입니다. 그 위로 beatoraja처럼 FULL COMBO(BAD·POOR 없음, 공POOR는 콤보를 끊지 않음), PERFECT(GOOD도 없음), MAX(전부 PGREAT)가 있습니다.
+  - 배속과 모드는 플레이 중에 tosu에서 읽은 값을 씁니다(레이저는 결과 화면에서 모드를 비워 보내기 때문).
+  - osu!lazer와 stable ScoreV2(판정 방식이 같음), 그냥 stable(ScoreV1) 기록은 따로 저장하고, 지금 클라이언트에 맞는 쪽을 보여줍니다.
+  - 기록에는 램프, TOTAL 옵션과 값(standard / lr2 / beatoraja / custom), EX 스코어, 판정 수, 공POOR, 게이지별 최종값, 날짜가 들어갑니다.
+- **화면**: 연결 상태(tosu, 오버레이), 선택된 곡, 지금 배속의 기록 카드, 다른 배속의 램프를 보여줍니다. 기록 카드는 이렇게 생겼습니다.
+  - 왼쪽: 클리어 램프 바. 색과 깜빡임은 beatoraja 스킨 m_select의 램프를 따릅니다(FAILED 빨강, EASY 초록, CLEAR 하늘색, HARD 흰색, EX-HARD 주황↔빨강, FULL COMBO·PERFECT·MAX는 흰색과 하늘색·초록·주황). 빨강·초록·하늘색은 채도를 조금 낮췄습니다.
   - 가운데: 램프 이름, 그리고 그 배속의 최고 EX 스코어, 스코어 레이트, 최저 BP(BAD + POOR + 공POOR)
   - 오른쪽: BMS 랭크(AAA / AA / A …)와 가까운 랭크 경계까지의 점수. 예: `AAA-0006`(AAA까지 6점), `AA+0012`(AA보다 12점 위), `MAX-0004`(만점까지 4점)
+- **설정**(톱니바퀴): 테마(Dark / Light / System), 램프 깜빡임(Slow 기본 / Fast는 m_select 원래 속도 / Off), 곡·아티스트 이름(원어 / 영어), 키 설정 새로고침과 지금 맵의 키 배치, 데이터 폴더 열기
 
 ### 저장 파일 (exe와 같은 폴더)
 
@@ -109,7 +116,7 @@ tosu API는 키 카운터를 4개(`k1, k2, m1, m2`)까지만 내보내기 때문
 |---|---|
 | `clears.json` | 플레이 기록 (FAILED 포함) |
 | `keybinds.json` | 마지막으로 읽은 lazer / stable 키 배치 |
-| `settings.json` | 포트(24055), tosu 주소, 대상 프로세스 이름(`osu!`), 테마(`Dark` / `Light` / `System`), 창 위치 |
+| `settings.json` | 포트(24055), tosu 주소, 대상 프로세스 이름(`osu!`), 테마, 램프 깜빡임, 이름 표기, 항상 위, 창 위치 |
 
 폴더째 옮기거나 복사해도 기록이 그대로 따라갑니다.
 
