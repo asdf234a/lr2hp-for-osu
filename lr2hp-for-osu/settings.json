@@ -6,7 +6,7 @@
     { "uniqueID": "totalValue", "type": "number", "title": "Custom TOTAL", "description": "Used when the TOTAL formula is custom.", "options": "", "value": 300 },
 
     { "uniqueID": "hpoor", "type": "header", "title": "Empty POOR", "description": "", "options": "", "value": "" },
-    { "uniqueID": "emptyPoor", "type": "checkbox", "title": "Count empty POOR", "description": "Key presses that don't land on a note. Works with tosu alone on lazer up to 4K; stable and 5K+ need keyhook/start-keyhook.bat running.", "options": "", "value": true },
+    { "uniqueID": "emptyPoor", "type": "checkbox", "title": "Count empty POOR", "description": "Key presses that don't land on a note. Works with tosu alone up to 4K; 5K and above need the lr2hp-for-osu app (lr2hp-for-osu.exe) running.", "options": "", "value": true },
     { "uniqueID": "emptyPoorMode", "type": "options", "title": "Empty POOR mode", "description": "lr2oraja: only presses up to 1 s before the lane's next note (LR2's rule). near: next note within 500 ms. all: every stray press during the chart.", "options": ["lr2oraja", "near", "all"], "value": "lr2oraja" },
     { "uniqueID": "earlyMissAsBad", "type": "checkbox", "title": "Early-press MISS counts as BAD", "description": "osu! gives a MISS for a press 127-164 ms early (OD8); LR2 would call it a BAD. On: that POOR becomes a BAD.", "options": "", "value": true },
     { "uniqueID": "keyHelperPort", "type": "number", "title": "Key helper port", "description": "", "options": "", "value": 24055 },
