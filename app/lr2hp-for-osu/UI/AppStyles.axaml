@@ -65,7 +65,7 @@
   <Style Selector="Border.lampflash">
     <Setter Property="Opacity" Value="0" />
   </Style>
-  <Style Selector="Border.lampflash.slow">
+  <Style Selector="Border.lampflash.slow:not(.soft)">
     <Style.Animations>
       <Animation Duration="0:0:0.1" IterationCount="INFINITE">
         <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /></KeyFrame>
@@ -75,12 +75,29 @@
       </Animation>
     </Style.Animations>
   </Style>
-  <Style Selector="Border.lampflash.fast">
+  <Style Selector="Border.lampflash.fast:not(.soft)">
     <Style.Animations>
       <Animation Duration="0:0:0.05" IterationCount="INFINITE">
         <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /></KeyFrame>
         <KeyFrame Cue="49.9%"><Setter Property="Opacity" Value="0" /></KeyFrame>
         <KeyFrame Cue="50%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <!-- "Soft" blink setting: the same two colours, faded slowly -->
+  <Style Selector="Border.lampflash.slow.soft">
+    <Style.Animations>
+      <Animation Duration="0:0:1.2" IterationCount="INFINITE" PlaybackDirection="Alternate" Easing="SineEaseInOut">
+        <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /></KeyFrame>
+        <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <Style Selector="Border.lampflash.fast.soft">
+    <Style.Animations>
+      <Animation Duration="0:0:0.6" IterationCount="INFINITE" PlaybackDirection="Alternate" Easing="SineEaseInOut">
+        <KeyFrame Cue="0%"><Setter Property="Opacity" Value="0" /></KeyFrame>
         <KeyFrame Cue="100%"><Setter Property="Opacity" Value="1" /></KeyFrame>
       </Animation>
     </Style.Animations>

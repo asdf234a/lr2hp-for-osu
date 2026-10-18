@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Media;
 using Avalonia.Styling;
@@ -45,25 +46,41 @@ public static class ThemeService
 
     public static bool IsLight { get; private set; }
 
-    /// <summary>theme: "Dark" (default), "Light" or "System"</summary>
+    /// <summary>
+    /// theme: "Dark" (default), "Light" or "System". Both palettes sit in the application's theme
+    /// dictionaries, so switching is only a theme variant change and popups (the settings flyout) follow.
+    /// </summary>
     public static void Apply(Window target, string theme)
     {
-        target.RequestedThemeVariant = theme switch
+        var variant = theme switch
         {
             "Light" => ThemeVariant.Light,
             "System" => ThemeVariant.Default,
             _ => ThemeVariant.Dark,
         };
+        var app = Application.Current!;
+        if (!app.Resources.ThemeDictionaries.ContainsKey(ThemeVariant.Dark))
+        {
+            app.Resources.ThemeDictionaries[ThemeVariant.Dark] = Palette(light: false);
+            app.Resources.ThemeDictionaries[ThemeVariant.Light] = Palette(light: true);
+        }
+        app.RequestedThemeVariant = variant;
         IsLight = target.ActualThemeVariant == ThemeVariant.Light;
+    }
+
+    private static ResourceDictionary Palette(bool light)
+    {
+        var resources = new ResourceDictionary();
         foreach (var (key, colors) in palette)
-            target.Resources[key] = new SolidColorBrush(Color.Parse(IsLight ? colors.Light : colors.Dark));
+            resources[key] = new SolidColorBrush(Color.Parse(light ? colors.Light : colors.Dark));
 
         // Scrims over the beatmap background, in the page colour
-        var page = Color.Parse(IsLight ? palette["PageBrush"].Light : palette["PageBrush"].Dark);
+        var page = Color.Parse(light ? palette["PageBrush"].Light : palette["PageBrush"].Dark);
         foreach (var alpha in new[] { 35, 62, 80, 92 })
-            target.Resources[$"BannerScrim{alpha}Color"] = Color.FromArgb((byte)Math.Round(alpha * 2.55), page.R, page.G, page.B);
+            resources[$"BannerScrim{alpha}Color"] = Color.FromArgb((byte)Math.Round(alpha * 2.55), page.R, page.G, page.B);
+        return resources;
     }
 
     public static IBrush Brush(Window window, string key) =>
-        window.Resources.TryGetValue(key, out var v) && v is IBrush b ? b : Brushes.Gray;
+        window.TryFindResource(key, window.ActualThemeVariant, out var v) && v is IBrush b ? b : Brushes.Gray;
 }

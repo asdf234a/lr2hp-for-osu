@@ -93,6 +93,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private bool lampFlashFast;
     public bool LampFlashFast { get => lampFlashFast; private set => Set(ref lampFlashFast, value); }
 
+    /// <summary>The "soft" blink setting: a slow fade instead of the skin's flicker</summary>
+    private bool lampFlashSoft;
+    public bool LampFlashSoft { get => lampFlashSoft; private set => Set(ref lampFlashSoft, value); }
+
     private string noBestText = "";
     public string NoBestText { get => noBestText; private set => Set(ref noBestText, value); }
 
@@ -182,8 +186,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
             BestHeader = $"Best · {rateKey}×{(s.Keys > 0 ? $" · {s.Keys}K" : "")} · {ClearStore.TotalLabel(lamp)}";
             BestLamp = ClearStore.Label(lamp.Lamp);
             BestBrush = LampBrush(lamp.Lamp);
-            LampFlashSlow = lamp.Lamp == "exhard";
-            LampFlashFast = lamp.Lamp == "failed";
+            var blink = app.Settings.LampBlink;
+            LampFlashSlow = blink != "off" && lamp.Lamp == "exhard";
+            LampFlashFast = blink != "off" && lamp.Lamp == "failed";
+            LampFlashSoft = blink == "soft";
             BestFlashBrush = lamp.Lamp switch
             {
                 "exhard" => ThemeService.Brush(window, "LampExHardFlashBrush"),

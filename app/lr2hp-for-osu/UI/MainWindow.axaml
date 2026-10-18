@@ -58,6 +58,22 @@
                 <Flyout Placement="BottomEdgeAlignedRight" Opening="SettingsOpening">
                   <StackPanel Width="250" Spacing="12" Margin="2">
                     <StackPanel Spacing="6">
+                      <TextBlock Classes="muted" FontSize="12" FontWeight="SemiBold" Text="Theme" />
+                      <StackPanel Orientation="Horizontal" Spacing="12">
+                        <RadioButton x:Name="ThemeDark" GroupName="theme" Content="Dark" IsCheckedChanged="ThemeChanged" />
+                        <RadioButton x:Name="ThemeLight" GroupName="theme" Content="Light" IsCheckedChanged="ThemeChanged" />
+                        <RadioButton x:Name="ThemeSystem" GroupName="theme" Content="System" IsCheckedChanged="ThemeChanged" />
+                      </StackPanel>
+                    </StackPanel>
+                    <StackPanel Spacing="6">
+                      <TextBlock Classes="muted" FontSize="12" FontWeight="SemiBold" Text="EX-HARD / FAILED lamp blink" />
+                      <StackPanel Orientation="Horizontal" Spacing="12">
+                        <RadioButton x:Name="BlinkSoft" GroupName="blink" Content="Soft" IsCheckedChanged="BlinkChanged" ToolTip.Tip="A slow fade between the two colours" />
+                        <RadioButton x:Name="BlinkSkin" GroupName="blink" Content="Skin" IsCheckedChanged="BlinkChanged" ToolTip.Tip="As fast as the m_select skin (100 ms / 50 ms)" />
+                        <RadioButton x:Name="BlinkOff" GroupName="blink" Content="Off" IsCheckedChanged="BlinkChanged" />
+                      </StackPanel>
+                    </StackPanel>
+                    <StackPanel Spacing="6">
                       <TextBlock Classes="muted" FontSize="12" FontWeight="SemiBold" Text="Song and artist names" />
                       <StackPanel Orientation="Horizontal" Spacing="12">
                         <RadioButton x:Name="TitlesOriginal" GroupName="titles" Content="Original" IsCheckedChanged="TitlesChanged" />
@@ -106,7 +122,7 @@
             <!-- Clear lamp, as the m_select skin's song list draws it -->
             <Panel Width="10">
               <Border Background="{Binding BestBrush}" />
-              <Border Classes="lampflash" Classes.slow="{Binding LampFlashSlow}" Classes.fast="{Binding LampFlashFast}" Background="{Binding BestFlashBrush}" />
+              <Border Classes="lampflash" Classes.slow="{Binding LampFlashSlow}" Classes.fast="{Binding LampFlashFast}" Classes.soft="{Binding LampFlashSoft}" Background="{Binding BestFlashBrush}" />
             </Panel>
             <StackPanel Grid.Column="1" Spacing="1" Margin="12,10,8,10">
               <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TargetLabelBrush}" Text="{Binding BestHeader}" TextTrimming="CharacterEllipsis" />

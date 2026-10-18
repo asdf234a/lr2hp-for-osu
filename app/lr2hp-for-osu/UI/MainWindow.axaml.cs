@@ -107,6 +107,8 @@ public sealed partial class MainWindow : Window
         var english = app.Settings.TitleLanguage == "english";
         if (this.FindControl<RadioButton>("TitlesOriginal") is { } original) original.IsChecked = !english;
         if (this.FindControl<RadioButton>("TitlesEnglish") is { } eng) eng.IsChecked = english;
+        if (this.FindControl<RadioButton>("Theme" + (app.Settings.Theme is "Light" or "System" ? app.Settings.Theme : "Dark")) is { } theme) theme.IsChecked = true;
+        if (this.FindControl<RadioButton>(app.Settings.LampBlink switch { "skin" => "BlinkSkin", "off" => "BlinkOff", _ => "BlinkSoft" }) is { } blink) blink.IsChecked = true;
         fillingSettings = false;
         if (this.FindControl<TextBlock>("KeysInfo") is { } keys) keys.Text = viewModel.KeysDetails;
         if (this.FindControl<TextBlock>("FolderInfo") is { } folder) folder.Text = Paths.Root;
@@ -116,6 +118,23 @@ public sealed partial class MainWindow : Window
     {
         if (fillingSettings || sender is not RadioButton { IsChecked: true } radio) return;
         app.Settings.TitleLanguage = radio.Name == "TitlesEnglish" ? "english" : "original";
+        app.SaveSettings();
+        viewModel.Refresh();
+    }
+
+    private void ThemeChanged(object? sender, RoutedEventArgs e)
+    {
+        if (fillingSettings || sender is not RadioButton { IsChecked: true, Name: { } name }) return;
+        app.Settings.Theme = name["Theme".Length..];
+        app.SaveSettings();
+        ThemeService.Apply(this, app.Settings.Theme);
+        viewModel.Refresh(); // the lamp and rank brushes come from the palette
+    }
+
+    private void BlinkChanged(object? sender, RoutedEventArgs e)
+    {
+        if (fillingSettings || sender is not RadioButton { IsChecked: true, Name: { } name }) return;
+        app.Settings.LampBlink = name["Blink".Length..].ToLowerInvariant();
         app.SaveSettings();
         viewModel.Refresh();
     }
