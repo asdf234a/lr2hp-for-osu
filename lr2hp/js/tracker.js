@@ -16,6 +16,7 @@ export const GAMEPLAY_DEFAULTS = {
     emptyPoor: true,
     emptyPoorMode: 'lr2oraja',
     earlyMissAsBad: true,
+    keySource: 'sync',
     keyHelperPort: 24055,
     inputOffset: 0,
     keys1: 'Space',
@@ -83,7 +84,11 @@ function rateOf(data) {
 }
 
 export class PlayTracker {
-    constructor({ host, settings, debug = false }) {
+    // keybindsUrl: where keyhook/sync-keys.mjs saved osu!'s key bindings
+    constructor({ host, settings, debug = false, keybindsUrl = 'keybinds.json' }) {
+        this.keybindsUrl = keybindsUrl;
+        this.synced = null; // { lazer: { [keys]: layout }, stable: { ... } }
+        this.client = 'lazer';
         this.host = host;
         this.settings = settings;
         this.debug = debug;
@@ -128,6 +133,7 @@ export class PlayTracker {
         });
         // Keep settling presses while the overlay is hidden (rAF may be throttled)
         setInterval(() => this.settlePresses(performance.now()), 20);
+        this.loadKeybinds();
         this.applySettings();
     }
 
@@ -135,7 +141,7 @@ export class PlayTracker {
     applySettings() {
         const s = this.settings;
         if (this.session) this.session.setRange(gaugeKey(s.startGauge, 'exhard'), gaugeKey(s.bottomGauge, 'easy'));
-        if (this.chart) this.layout = parseLayout(s[`keys${this.chart.keys}`]);
+        if (this.chart) this.updateLayout();
         this.connectHelper();
     }
 
@@ -189,6 +195,8 @@ export class PlayTracker {
 
     startPlay(data) {
         this.isLazer = data.client === 'lazer';
+        this.client = this.isLazer ? 'lazer' : 'stable';
+        this.loadKeybinds();
         this.session = this.newSession(this.notesFromStats(data));
         this.classifier = null;
         this.inResults = false;
@@ -210,7 +218,7 @@ export class PlayTracker {
         this.fetchChart(data.beatmap?.checksum || '').then((c) => {
             if (this.session !== current || !c) return;
             this.session.setNotes(judgementCount(c, this.isLazer));
-            this.layout = parseLayout(this.settings[`keys${c.keys}`]);
+            this.updateLayout();
             this.classifier = new PressClassifier(c, {
                 early: this.windows.miss,
                 late: this.windows.meh,
@@ -221,6 +229,26 @@ export class PlayTracker {
                 mode: this.settings.emptyPoorMode,
             });
         });
+    }
+
+    // Picks up keybinds.json again at every play, so a fresh sync applies right away
+    async loadKeybinds() {
+        try {
+            const res = await fetch(`${this.keybindsUrl}?${Date.now()}`, { cache: 'no-store' });
+            this.synced = res.ok ? await res.json() : null;
+        } catch {
+            this.synced = null;
+        }
+        if (this.chart) this.updateLayout();
+    }
+
+    // osu!'s own layout for this key count when synced, else the typed-in one
+    updateLayout() {
+        const keys = this.chart?.keys;
+        if (!keys) return;
+        const synced = this.settings.keySource !== 'manual' ? this.synced?.[this.client]?.[keys] : null;
+        this.layoutSource = synced ? `${this.client} sync` : 'manual';
+        this.layout = parseLayout(synced || this.settings[`keys${keys}`]);
     }
 
     onPress(column, wall) {
@@ -365,6 +393,13 @@ export class PlayTracker {
             const s = this.classifier.stats;
             const c = this.classifier.calibration;
             let text = `hit ${s.hit} · early ${s.earlyMiss} · 空POOR ${s.empty} · sync ${c >= 0 ? '+' : ''}${c.toFixed(1)}ms`;
+            if (this.helperConnected && this.chart) {
+                const lanes = [...Array(this.chart.keys)].map((_, lane) => {
+                    const vk = [...this.layout].find(([, l]) => l === lane)?.[0];
+                    return vk === undefined ? '?' : vkName(vk);
+                });
+                text += ` · keys (${this.layoutSource}) [${lanes.join(' ')}]`;
+            }
             // Keys pressed during play that the layout doesn't know: a likely layout mismatch
             const unmapped = [...(this.unmapped || new Map())].filter(([, n]) => n >= 3);
             if (unmapped.length) text += ` · unmapped ${unmapped.map(([vk, n]) => `${vkName(vk)}×${n}`).join(' ')}`;

@@ -82,14 +82,24 @@ osu! 자체 HP로 실패하면 플레이가 끝나므로 **NF(No Fail)** 를 켜
 | 1~4K | tosu만으로 동작 (`/websocket/v2/precise`의 키 카운터) |
 | 5~7K | **키 헬퍼 필요**: `keyhook/start-keyhook.bat` 실행 |
 
-tosu API는 키 카운터를 4개(`k1, k2, m1, m2`)까지만 내보내기 때문에 5K 이상은 tosu만으로는 알 수 없습니다. 헬퍼가 켜져 있으면 키 수와 상관없이 헬퍼 입력을 우선 사용합니다. 헬퍼를 쓸 때는 설정의 키 배치(`7K keys` 등)를 osu! 키 설정과 같게 맞춰 주세요. 노트 입력은 hitErrors로 확정되므로 레인 배치가 틀려도 영향이 적지만, 공POOR와 이른 MISS 구분에는 레인이 쓰입니다.
+tosu API는 키 카운터를 4개(`k1, k2, m1, m2`)까지만 내보내기 때문에 5K 이상은 tosu만으로는 알 수 없습니다. 헬퍼가 켜져 있으면 키 수와 상관없이 헬퍼 입력을 우선 사용합니다. 헬퍼 입력을 레인에 맞추려면 키 배치가 필요한데, 아래의 키 설정 동기화로 osu! 설정을 그대로 가져옵니다. 노트 입력은 hitErrors로 확정되므로 레인 배치가 틀려도 영향이 적지만, 공POOR와 이른 MISS 구분에는 레인이 쓰입니다.
+
+### 키 설정 동기화 (lazer / stable)
+
+`start-keyhook.bat`은 헬퍼를 켜기 전에 osu!의 매니아 키 설정을 읽어 오버레이 폴더의 `keybinds.json`에 저장합니다. 따로 실행하려면 `sync-keys.bat`을 씁니다. Node.js가 필요하고, 처음 실행할 때 `realm` 패키지를 자동으로 설치합니다.
+
+- **lazer**: 데이터 폴더의 `client.realm`(Realm 데이터베이스)에서 읽습니다. 게임이 쓰고 있는 원본은 열지 않고 임시 복사본을 읽은 뒤 지웁니다.
+- **stable**: 게임 폴더의 `osu!.<Windows 사용자 이름>.cfg`에서 `ManiaLayoutsNK` 줄을 읽습니다.
+- 폴더 위치: tosu가 켜져 있으면 tosu가 붙어 있는 클라이언트의 폴더를 씁니다(lazer는 `folders.songs`의 상위 폴더, stable은 `folders.game`). 그 밖에는 lazer는 `%APPDATA%\osu\storage.ini`, stable은 레지스트리의 osu! 실행 경로에서 찾습니다. `--lazer <폴더>`, `--stable <폴더>`, `--out <오버레이 폴더>`로 직접 지정할 수도 있습니다.
+- 오버레이는 지금 플레이 중인 클라이언트(lazer/stable)의 배치를 씁니다. 동기화된 배치가 없는 키 수는 설정의 키 배치(`7K keys` 등)를 씁니다. 설정 **Key layout source**를 `manual`로 바꾸면 항상 설정의 키 배치를 씁니다.
+- osu!에서 키를 바꿨다면 `sync-keys.bat`을 다시 실행하세요. 다음 곡부터 적용됩니다.
 
 ### 키 헬퍼
 
 - 별도 설치가 필요 없는 PowerShell 스크립트입니다. Windows 기본 .NET으로 컴파일됩니다.
 - `GetAsyncKeyState`로 키보드 상태를 읽기만 합니다. osu! 프로세스의 메모리를 읽거나 쓰지 않고, DLL 주입이나 입력 전송도 하지 않습니다.
 - osu! 창이 포커스일 때만 키 정보를 `ws://127.0.0.1:24055`로 보냅니다(로컬 전용).
-- 포트와 프로세스 이름은 `start-keyhook.bat -Port 24055 -Process "osu!"`처럼 바꿀 수 있습니다.
+- 포트와 프로세스 이름은 `powershell -File lr2hp-keys.ps1 -Port 24055 -Process "osu!"`처럼 바꿀 수 있습니다.
 
 ## 한계
 

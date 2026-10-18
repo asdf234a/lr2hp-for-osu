@@ -1,0 +1,9 @@
+{
+  "name": "lr2hp-keyhook",
+  "private": true,
+  "type": "module",
+  "description": "Key helper and osu! keybind sync for the LR2 HP overlay",
+  "dependencies": {
+    "realm": "12.15.0"
+  }
+}

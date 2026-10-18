@@ -20,7 +20,12 @@ const urlGameplay = settingsFromUrl(GAMEPLAY_DEFAULTS, params);
 let gameplay = {};
 let look = settingsFromUrl(LOOK_DEFAULTS, params);
 const settings = { ...urlGameplay, ...look };
-const tracker = new PlayTracker({ host, settings, debug: params.has('debug') });
+const tracker = new PlayTracker({
+    host,
+    settings,
+    debug: params.has('debug'),
+    keybindsUrl: `../${encodeURIComponent(look.gaugeOverlay)}/keybinds.json`,
+});
 
 const canvas = document.getElementById('judge');
 const ctx = canvas.getContext('2d');

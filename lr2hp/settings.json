@@ -12,6 +12,7 @@
     { "uniqueID": "keyHelperPort", "type": "number", "title": "Key helper port", "description": "", "options": "", "value": 24055 },
     { "uniqueID": "inputOffset", "type": "number", "title": "Input offset (ms)", "description": "Usually leave at 0: the song clock calibrates itself from osu!'s hit offsets.", "options": "", "value": 0 },
     { "uniqueID": "showPressStats", "type": "checkbox", "title": "Show press stats", "description": "Debug readout: presses confirmed as hits, early misses, empty POORs and the clock correction.", "options": "", "value": false },
+    { "uniqueID": "keySource", "type": "options", "title": "Key layout source", "description": "sync: osu!'s own mania key bindings, read by keyhook (start-keyhook.bat or sync-keys.bat) for lazer and stable; key counts it has none for use the layouts below. manual: always the layouts below.", "options": ["sync", "manual"], "value": "sync" },
     { "uniqueID": "keys4", "type": "text", "title": "4K keys", "description": "Space-separated, left to right. Letters, digits, Space, LShift, RShift, ; , . / [ ] etc.", "options": "", "value": "D F J K" },
     { "uniqueID": "keys5", "type": "text", "title": "5K keys", "description": "", "options": "", "value": "D F Space J K" },
     { "uniqueID": "keys6", "type": "text", "title": "6K keys", "description": "", "options": "", "value": "S D F J K L" },
