@@ -29,6 +29,7 @@ export class GaugeRenderer {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         this.parts = 50;
+        this.length = 0; // bar length in px; 0 = 12 px per segment like the skin
         this.skin = null;
         this.anim = 0;
         this.animUntil = 0;
@@ -45,14 +46,15 @@ export class GaugeRenderer {
         this.skinName = name;
     }
 
-    setParts(parts) {
+    setLayout(parts, length = 0) {
         this.parts = Math.max(10, Math.min(200, Math.round(parts) || 50));
-        this.canvas.width = this.parts * SEG_W + NUM_GAP + NUM_BOX;
+        this.length = Math.max(0, Math.round(length) || 0);
+        this.canvas.width = this.barWidth + NUM_GAP + NUM_BOX;
         this.canvas.height = BAR_H;
     }
 
     get barWidth() {
-        return this.parts * SEG_W;
+        return this.length > 0 ? Math.max(this.parts, this.length) : this.parts * SEG_W;
     }
 
     get width() {
@@ -88,7 +90,10 @@ export class GaugeRenderer {
             const below = i * max / parts < border ? 1 : 0;
             const on = i === lit || lit - this.anim > i;
             const [sx, sy, sw, sh] = this.segmentSource(type, (on ? 0 : 2) + below);
-            ctx.drawImage(this.skin.gauge, sx, sy, sw, sh, (i - 1) * segW, y, segW, BAR_H);
+            // Whole-pixel edges so stretched segments don't leave seams
+            const x0 = Math.round((i - 1) * segW);
+            const x1 = Math.round(i * segW);
+            ctx.drawImage(this.skin.gauge, sx, sy, sw, sh, x0, y, x1 - x0, BAR_H);
         }
 
         if (showNumber) this.drawNumber(value);

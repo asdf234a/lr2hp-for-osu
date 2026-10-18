@@ -5,6 +5,7 @@ import { PlayTracker, GAMEPLAY_DEFAULTS, settingsFromUrl, watchSettings } from '
 const DEFAULTS = {
     ...GAMEPLAY_DEFAULTS,
     parts: 50,
+    length: 0,
     skin: 'simple2',
     scale: 1,
     showLabel: true,
@@ -35,7 +36,7 @@ const tracker = new PlayTracker({ host, settings, debug: params.has('debug') });
 async function applySettings(next = {}) {
     Object.assign(settings, next);
     document.documentElement.style.setProperty('--scale', Number(settings.scale) || 1);
-    renderer.setParts(Number(settings.parts) || 50);
+    renderer.setLayout(Number(settings.parts) || 50, Number(settings.length) || 0);
     try {
         await renderer.setSkin(settings.skin || 'simple2');
     } catch (e) {
