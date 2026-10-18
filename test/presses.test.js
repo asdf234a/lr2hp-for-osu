@@ -74,6 +74,7 @@ test('the clock calibrates itself from hit offsets', () => {
     for (const [lane, t] of [[0, 1000], [1, 1000], [3, 2000]]) {
         c.press(lane, t + 5);
         c.hitErrors([5], t + 7);
+        c.tick(t + 100); // pairs become final after the confirm wait
     }
     assert.ok(Math.abs(c.calibration - 70) < 1, `calibration ${c.calibration}`);
     // Uncorrected, this press would look 270 ms early (empty); corrected it is 200 ms early

@@ -108,7 +108,7 @@ test('a stray tap just before a hit in another lane stays an empty POOR', () => 
     c.press(2, 990); // stray: lane 2's note is 2 s away
     c.press(0, 1000); // the real hit
     c.hitErrors([0], 1002);
-    const r = c.tick(1200);
+    const r = c.tick(1200).filter((x) => x.result !== 'hit');
     assert.deepEqual(r.map((x) => x.result), ['empty']);
     assert.equal(c.stats.hit, 1);
 });
@@ -123,7 +123,7 @@ function chordCase(order, offsets, extra = []) {
     const c = new PressClassifier({ keys: 7, notes }, { early: EARLY, late: LATE, songTime: (w) => w });
     for (const lane of order) c.press(lane, 1003);
     c.hitErrors(offsets, 1006);
-    return c.tick(1300).map((x) => x.result);
+    return c.tick(1300).map((x) => x.result).filter((x) => x !== 'hit');
 }
 
 test('chord with an extra key: the extra key is an empty POOR whatever the press order', () => {
