@@ -50,17 +50,86 @@ public sealed class ClearDatabase
 public sealed class ClearStore
 {
     private readonly object gate = new();
-    private readonly ClearDatabase db = JsonFile.Load<ClearDatabase>(Paths.ClearsFile);
+    private ClearDatabase db = JsonFile.Load<ClearDatabase>(Paths.ClearsFile);
+
+    /// <summary>Results taken while clears.json couldn't be opened; merged into it once it can be.</summary>
+    private readonly List<(string Checksum, string Rate, int Keys, ClearRecord Record)> unsaved = new();
 
     public event Action<string>? Changed;
 
+    /// <summary>Why records aren't being saved right now (clears.json can't be opened), or null.</summary>
+    public string? Problem { get; private set; }
+
     public ClearStore()
     {
+        if (JsonFile.IsBlocked(Paths.ClearsFile, out _))
+        {
+            Problem = BlockedText();
+            return;
+        }
         // Records saved before the combo lamps existed get them from their judge counts
         var upgraded = false;
         foreach (var record in db.Maps.Values.SelectMany(m => m.Rates.Values).SelectMany(l => l))
             upgraded |= UpgradeLamp(record);
-        if (upgraded) JsonFile.Save(Paths.ClearsFile, db);
+        if (upgraded) Persist();
+    }
+
+    /// <summary>
+    /// Writes clears.json. While it couldn't be opened, it is read again first; if that works the
+    /// results kept meanwhile are merged into what was on disk, otherwise nothing is written.
+    /// Call inside the lock.
+    /// </summary>
+    private void Persist()
+    {
+        if (!Reopen()) return;
+        try
+        {
+            JsonFile.Save(Paths.ClearsFile, db);
+            Problem = null;
+        }
+        catch (Exception e)
+        {
+            // Still in memory: the next save writes it
+            Problem = $"clears.json could not be saved ({e.Message})";
+            Log.Write(Problem);
+        }
+    }
+
+    /// <summary>
+    /// When clears.json couldn't be opened, reads it again and merges the results kept meanwhile into
+    /// what was on disk. False while it still can't be opened. Call inside the lock.
+    /// </summary>
+    private bool Reopen()
+    {
+        if (!JsonFile.IsBlocked(Paths.ClearsFile, out _)) return true;
+        var disk = JsonFile.Load<ClearDatabase>(Paths.ClearsFile);
+        if (JsonFile.IsBlocked(Paths.ClearsFile, out _))
+        {
+            Problem = BlockedText();
+            return false;
+        }
+        db = disk;
+        foreach (var (checksum, rate, keys, record) in unsaved) Insert(checksum, rate, keys, record);
+        Log.Write($"clears.json can be read again; merged {unsaved.Count} kept result(s)");
+        unsaved.Clear();
+        Problem = null;
+        return true;
+    }
+
+    // Short enough for the window; the log has the full reason
+    private string BlockedText() =>
+        $"clears.json can't be opened (another program may be holding it). Records are not saved; {unsaved.Count} new result{(unsaved.Count == 1 ? " is" : "s are")} kept until it can be read.";
+
+    /// <summary>Adds a record unless the same results screen was already reported. Call inside the lock.</summary>
+    private bool Insert(string checksum, string rate, int keys, ClearRecord record)
+    {
+        if (!db.Maps.TryGetValue(checksum, out var map)) db.Maps[checksum] = map = new MapRecord();
+        if (keys > 0) map.Keys = keys;
+        if (!map.Rates.TryGetValue(rate, out var list)) map.Rates[rate] = list = new List<ClearRecord>();
+        // The overlay can report the same results screen twice (reconnects, several overlays)
+        if (list.Any(x => x.Scoring == record.Scoring && x.Lamp == record.Lamp && x.ExScore == record.ExScore && Math.Abs((record.Date - x.Date).TotalMinutes) < 2)) return false;
+        list.Add(record);
+        return true;
     }
 
     /// <summary>beatoraja's clear types, lowest first</summary>
@@ -147,14 +216,10 @@ public sealed class ClearStore
 
         lock (gate)
         {
-            if (!db.Maps.TryGetValue(checksum, out var map)) db.Maps[checksum] = map = new MapRecord();
-            if (Num(m, "keys") is > 0 and var k) map.Keys = (int)k;
-
-            if (!map.Rates.TryGetValue(rate, out var list)) map.Rates[rate] = list = new List<ClearRecord>();
-            // The overlay can report the same results screen twice (reconnects, several overlays)
-            if (list.Any(x => x.Scoring == record.Scoring && x.Lamp == record.Lamp && x.ExScore == record.ExScore && (record.Date - x.Date).TotalMinutes < 2)) return false;
-            list.Add(record);
-            JsonFile.Save(Paths.ClearsFile, db);
+            var keys = (int)Num(m, "keys");
+            if (!Insert(checksum, rate, keys, record)) return false;
+            if (JsonFile.IsBlocked(Paths.ClearsFile, out _)) unsaved.Add((checksum, rate, keys, record));
+            Persist();
         }
         Changed?.Invoke(checksum);
         return true;
@@ -210,8 +275,14 @@ public sealed class ClearStore
     {
         lock (gate)
         {
+            // Deleting from memory alone would come back when the file is merged in later
+            if (!Reopen())
+            {
+                Log.Write("not deleting records: clears.json can't be opened");
+                return false;
+            }
             if (!db.Maps.Remove(checksum)) return false;
-            JsonFile.Save(Paths.ClearsFile, db);
+            Persist();
         }
         Changed?.Invoke(checksum);
         return true;

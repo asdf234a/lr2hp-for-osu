@@ -160,8 +160,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
             $"osu! focused: {(app.Keys.Focused ? "yes" : "no")}",
             $"data folder: {Paths.Root}");
 
-        HasError = app.StartError != null;
-        ErrorText = app.StartError ?? "";
+        var errors = new[] { app.StartError, app.Clears.Problem }.Where(p => p != null).ToArray();
+        HasError = errors.Length > 0;
+        ErrorText = string.Join("\n", errors);
 
         // Map
         var hasMap = tosu.Connected && s.Checksum.Length > 0;

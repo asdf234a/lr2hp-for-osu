@@ -139,8 +139,8 @@ public sealed class AppController : IDisposable
                 if (set.Lazer.Count == 0 && Keybinds.Lazer.Count > 0) (set.Lazer, set.LazerSource) = (Keybinds.Lazer, Keybinds.LazerSource);
                 if (set.Stable.Count == 0 && Keybinds.Stable.Count > 0) (set.Stable, set.StableSource) = (Keybinds.Stable, Keybinds.StableSource);
                 Keybinds = set;
-                JsonFile.Save(Paths.KeybindsFile, set);
                 Server.Broadcast(KeybindsMessage());
+                JsonFile.Save(Paths.KeybindsFile, set);
             }
             catch (Exception e)
             {
