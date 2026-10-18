@@ -1,5 +1,6 @@
 import { GAUGE_LABEL, CLEAR_LABEL, GAUGE_ORDER, isSurvivalGauge } from './gauge.js';
-import { parseOsuMania, judgementCount, PressMatcher, parseLayout } from './notes.js';
+import { parseOsuMania, judgementCount, parseLayout } from './notes.js';
+import { PressClassifier } from './presses.js';
 import { PlaySession } from './session.js';
 import { SongClock } from './clock.js';
 import { GaugeRenderer } from './render.js';
@@ -16,6 +17,7 @@ const DEFAULTS = {
     showLabel: true,
     showAllGauges: false,
     showEmptyPoorStatus: true,
+    showPressStats: false,
     hideOutsidePlay: true,
     emptyPoor: true,
     emptyPoorMode: 'all',
@@ -63,7 +65,7 @@ const renderer = new GaugeRenderer(els.canvas);
 const clock = new SongClock();
 
 let session = null;
-let matcher = null;
+let classifier = null;
 let chart = null;
 let chartChecksum = null;
 let layout = new Map();
@@ -75,6 +77,8 @@ let inResults = false;
 let visible = false;
 let helperConnected = false;
 let tosuKeyCounts = null;
+let hitErrorCount = 0;
+let helperOffset = null;
 let lastData = null;
 
 // ---------------------------------------------------------------- settings
@@ -173,7 +177,7 @@ function startPlay(data) {
         start: gaugeKey(settings.startGauge, 'exhard'),
         bottom: gaugeKey(settings.bottomGauge, 'easy'),
     });
-    matcher = null;
+    classifier = null;
     inResults = false;
     clock.reset();
     tosuKeyCounts = null;
@@ -192,8 +196,9 @@ function startPlay(data) {
         if (session !== current || !c) return;
         session.setNotes(judgementCount(c, isLazer));
         layout = parseLayout(settings[`keys${c.keys}`]);
-        matcher = new PressMatcher(c, {
+        classifier = new PressClassifier(c, {
             ...hitWindows(data),
+            songTime: (wall) => clock.now(wall) + (Number(settings.inputOffset) || 0),
             mirror: mods.has('MR'),
             // Shuffled lanes: match the press against every lane
             anyColumn: mods.has('RD') || mods.has('DS') || mods.has('CO'),
@@ -202,10 +207,21 @@ function startPlay(data) {
     });
 }
 
-function onPress(column, now) {
-    if (!session || !matcher || inResults || !settings.emptyPoor || !clock.valid) return;
-    const time = clock.now(now) + (Number(settings.inputOffset) || 0);
-    if (matcher.press(column, time) === 'empty') session.addEmptyPoor();
+const debugPresses = [];
+
+function onPress(column, wall) {
+    if (params.has('debug')) {
+        debugPresses.push({ column, wall: Math.round(wall), ok: !!(session && classifier && clock.valid) });
+        if (debugPresses.length > 500) debugPresses.shift();
+    }
+    if (!session || !classifier || inResults || !settings.emptyPoor || !clock.valid) return;
+    classifier.press(column, wall);
+}
+
+// Presses that got no hitErrors entry are settled a moment later
+function settlePresses(now) {
+    if (!session || !classifier) return;
+    for (let n = classifier.tick(now); n > 0; n--) session.addEmptyPoor();
 }
 
 // ---------------------------------------------------------------- tosu data
@@ -246,17 +262,30 @@ function onTosu(data) {
     lastState = state;
 }
 
-// Lazer only: tosu reports the first four key counters
 function onTosuPrecise(data) {
-    if (helperConnected || !isLazer || !chart || chart.keys > 4 || !data.keys) return;
-    const counts = ['k1', 'k2', 'm1', 'm2'].map((k) => Number(data.keys[k]?.count) || 0);
-    if (tosuKeyCounts) {
-        const now = performance.now();
-        for (let col = 0; col < chart.keys; col++) {
-            for (let n = counts[col] - tosuKeyCounts[col]; n > 0; n--) onPress(col, now);
+    if (data.error) return;
+    const now = performance.now();
+
+    // Up to 4K tosu's own key counters stand in for the helper
+    if (!helperConnected && isLazer && chart && chart.keys <= 4 && data.keys) {
+        const counts = ['k1', 'k2', 'm1', 'm2'].map((k) => Number(data.keys[k]?.count) || 0);
+        if (tosuKeyCounts) {
+            for (let col = 0; col < chart.keys; col++) {
+                for (let n = counts[col] - tosuKeyCounts[col]; n > 0; n--) onPress(col, now);
+            }
         }
+        tosuKeyCounts = counts;
     }
-    tosuKeyCounts = counts;
+
+    // New hitErrors entries confirm the presses osu! used on notes
+    const errors = Array.isArray(data.hitErrors) ? data.hitErrors : null;
+    if (!errors) return;
+    if (errors.length < hitErrorCount) hitErrorCount = 0; // cleared on retry / song select
+    if (errors.length > hitErrorCount) {
+        const added = errors.slice(hitErrorCount);
+        hitErrorCount = errors.length;
+        if (classifier) classifier.hitErrors(added, now);
+    }
 }
 
 // ---------------------------------------------------------------- key helper
@@ -279,6 +308,7 @@ function connectHelper() {
     helper = connect(`ws://127.0.0.1:${port}/`, {
         onOpen: () => {
             helperConnected = true;
+            helperOffset = null;
         },
         onClose: () => {
             helperConnected = false;
@@ -286,7 +316,17 @@ function connectHelper() {
         onMessage: (msg) => {
             if (msg.d !== 1 || !chart) return;
             const column = layout.get(msg.vk);
-            if (column !== undefined) onPress(column, performance.now());
+            if (column === undefined) return;
+            // Map the helper's own timestamp onto performance.now(); the smallest
+            // receive delay seen is the closest to the true offset
+            const now = performance.now();
+            const t = Number(msg.t);
+            let wall = now;
+            if (Number.isFinite(t)) {
+                if (helperOffset === null || now - t < helperOffset) helperOffset = now - t;
+                wall = t + helperOffset;
+            }
+            onPress(column, wall);
         },
     });
 }
@@ -296,12 +336,17 @@ function connectHelper() {
 function emptyPoorStatus() {
     if (demo || !settings.emptyPoor) return '';
     if (lastData?.beatmap?.isConvert) return '空POOR: convert';
-    if (helperConnected) return '';
-    if (isLazer && chart && chart.keys <= 4) return '';
-    return '空POOR: off';
+    if (!helperConnected && !(isLazer && chart && chart.keys <= 4)) return '空POOR: off';
+    if (settings.showPressStats && classifier) {
+        const s = classifier.stats;
+        const c = classifier.calibration;
+        return `hit ${s.hit} · early ${s.earlyMiss} · 空POOR ${s.empty} · sync ${c >= 0 ? '+' : ''}${c.toFixed(1)}ms`;
+    }
+    return '';
 }
 
 function frame(now) {
+    settlePresses(now);
     const shown = visible && session;
     els.root.classList.toggle('hidden', !shown);
     if (shown) {
@@ -326,7 +371,7 @@ function frame(now) {
         } else {
             els.all.textContent = '';
         }
-        els.status.textContent = settings.showEmptyPoorStatus ? emptyPoorStatus() : '';
+        els.status.textContent = settings.showEmptyPoorStatus || settings.showPressStats ? emptyPoorStatus() : '';
     }
     requestAnimationFrame(frame);
 }
@@ -374,6 +419,10 @@ function runDemo() {
 
 // ---------------------------------------------------------------- boot
 
+if (params.has('debug')) {
+    window.lr2hp = { get session() { return session; }, get classifier() { return classifier; }, get clock() { return clock; }, get chart() { return chart; }, presses: debugPresses };
+}
+
 async function boot() {
     await applySettings();
     requestAnimationFrame(frame);
@@ -383,7 +432,12 @@ async function boot() {
     }
 
     connect(`ws://${host}/websocket/v2`, { onMessage: onTosu });
-    connect(`ws://${host}/websocket/v2/precise`, { onMessage: onTosuPrecise });
+    connect(`ws://${host}/websocket/v2/precise`, {
+        onOpen: (ws) => ws.send(`applyFilters:${JSON.stringify(['hitErrors', 'keys'])}`),
+        onMessage: onTosuPrecise,
+    });
+    // Keep settling presses while the overlay is hidden (rAF may be throttled)
+    setInterval(() => settlePresses(performance.now()), 20);
 
     const counterPath = window.COUNTER_PATH;
     if (counterPath) {

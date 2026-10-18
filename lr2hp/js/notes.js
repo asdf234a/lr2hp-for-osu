@@ -1,4 +1,4 @@
-// osu!mania chart parsing and press-to-note matching for empty POOR detection.
+// osu!mania chart parsing and key layout helpers.
 
 // Parses the parts of a .osu file we need. Returns null for non-mania charts
 // (converts), since their note layout can't be reproduced here.
@@ -42,67 +42,6 @@ export function parseOsuMania(text) {
 export function judgementCount(chart, lazer) {
     const holds = chart.notes.filter((n) => n.hold).length;
     return chart.notes.length + (lazer ? holds : 0);
-}
-
-// Decides, for each key press, whether osu! would have used it on a note.
-// A press consumes the oldest note in its column that is still hittable:
-// osu! accepts a press up to `early` ms before a note (an early miss) and
-// up to `late` ms after it. Anything else is an empty POOR.
-export class PressMatcher {
-    constructor(chart, { early, late, mirror = false, anyColumn = false, mode = 'all', nearWindow = 500 }) {
-        this.keys = chart.keys;
-        this.early = early;
-        this.late = late;
-        this.mirror = mirror;
-        this.anyColumn = anyColumn;
-        this.mode = mode;
-        this.nearWindow = nearWindow;
-        this.columns = Array.from({ length: chart.keys }, () => []);
-        for (const n of chart.notes) this.columns[n.column].push(n);
-        this.next = new Array(chart.keys).fill(0);
-        this.first = chart.notes.length ? chart.notes[0].time : 0;
-        this.last = chart.notes.reduce((m, n) => Math.max(m, n.end), 0);
-    }
-
-    // Skip notes osu! has already given up on
-    skipExpired(col, time) {
-        const list = this.columns[col];
-        let i = this.next[col];
-        while (i < list.length && list[i].time + this.late < time) i++;
-        this.next[col] = i;
-        return list[i];
-    }
-
-    // Returns 'hit' (press went to a note), 'empty' (empty POOR) or 'ignored'.
-    press(inputColumn, time) {
-        if (inputColumn < 0 || inputColumn >= this.keys) return 'ignored';
-        const col = this.mirror ? this.keys - 1 - inputColumn : inputColumn;
-
-        const candidates = this.anyColumn ? [...this.columns.keys()] : [col];
-        let best = -1;
-        let bestNote = null;
-        let nearest = Infinity;
-        for (const c of candidates) {
-            const note = this.skipExpired(c, time);
-            if (!note) continue;
-            nearest = Math.min(nearest, note.time - time);
-            if (note.time - this.early <= time && (!bestNote || note.time < bestNote.time)) {
-                best = c;
-                bestNote = note;
-            }
-        }
-        if (bestNote) {
-            this.next[best]++;
-            return 'hit';
-        }
-
-        if (this.mode === 'near') {
-            return nearest <= this.nearWindow ? 'empty' : 'ignored';
-        }
-        // 'all': any stray press while the chart is running
-        if (time < this.first - this.early || time > this.last + this.late) return 'ignored';
-        return 'empty';
-    }
 }
 
 // Key names accepted in the key layout settings, mapped to Windows virtual-key codes.

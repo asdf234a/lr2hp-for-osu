@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { parseOsuMania, judgementCount, PressMatcher, parseLayout, keyNameToVk } from '../lr2hp/js/notes.js';
+import { parseOsuMania, judgementCount, parseLayout, keyNameToVk } from '../lr2hp/js/notes.js';
 import { PlaySession, hitsToCounts } from '../lr2hp/js/session.js';
 import { SongClock } from '../lr2hp/js/clock.js';
 
@@ -33,33 +33,6 @@ test('parses mania notes, columns and holds', () => {
 
 test('non-mania charts are rejected', () => {
     assert.equal(parseOsuMania(OSU.replace('Mode: 3', 'Mode: 0')), null);
-});
-
-test('presses on notes are hits, stray presses are empty POOR', () => {
-    const chart = parseOsuMania(OSU);
-    const m = new PressMatcher(chart, { early: 164, late: 127 });
-    assert.equal(m.press(0, 990), 'hit');
-    assert.equal(m.press(0, 1010), 'empty'); // note already used
-    assert.equal(m.press(1, 1100), 'hit'); // late but inside the 50 window
-    assert.equal(m.press(3, 1700), 'empty'); // 300 ms before the note: outside the miss window
-    assert.equal(m.press(3, 1850), 'hit'); // early miss still consumes the note
-    assert.equal(m.press(2, 1700), 'empty'); // hold head expired long ago
-    assert.equal(m.press(0, 100), 'ignored'); // before the chart starts
-    assert.equal(m.press(0, 9000), 'ignored'); // after the chart ends
-});
-
-test('near mode only counts presses close to an upcoming note', () => {
-    const chart = parseOsuMania(OSU);
-    const m = new PressMatcher(chart, { early: 164, late: 127, mode: 'near' });
-    assert.equal(m.press(3, 1600), 'empty'); // 400 ms before the note
-    assert.equal(m.press(3, 1200), 'ignored'); // 800 ms before
-});
-
-test('mirror flips columns', () => {
-    const chart = parseOsuMania(OSU);
-    const m = new PressMatcher(chart, { early: 164, late: 127, mirror: true });
-    assert.equal(m.press(3, 1000), 'hit'); // physical lane 4 is chart lane 1
-    assert.equal(m.press(0, 2000), 'hit');
 });
 
 test('key layouts map to virtual-key codes', () => {
