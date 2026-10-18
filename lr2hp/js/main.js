@@ -27,6 +27,7 @@ const els = {
     label: document.getElementById('label'),
     all: document.getElementById('all'),
     status: document.getElementById('status'),
+    top: document.querySelector('.top'),
 };
 const renderer = new GaugeRenderer(els.canvas);
 const tracker = new PlayTracker({ host, settings, debug: params.has('debug') });
@@ -41,7 +42,7 @@ async function applySettings(next = {}) {
         console.warn(e);
         await renderer.setSkin('simple2');
     }
-    els.root.style.width = `${renderer.barWidth}px`;
+    els.root.style.width = `${renderer.width}px`;
     if (!demo) tracker.applySettings();
 }
 
@@ -74,6 +75,7 @@ function frame(now) {
         }
         const status = demo ? '' : tracker.emptyPoorStatus(settings.showPressStats);
         els.status.textContent = settings.showEmptyPoorStatus || settings.showPressStats ? status : '';
+        els.top.classList.toggle('empty', !els.label.textContent && !els.all.textContent && !els.status.textContent);
     }
     requestAnimationFrame(frame);
 }

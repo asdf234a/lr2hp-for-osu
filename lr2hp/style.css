@@ -23,13 +23,10 @@ body {
     opacity: 0;
 }
 
-/* Text row shares the 28px band the skin number sits in, left of the number */
+/* Gauge name / status row above the bar; collapses when it has nothing to say */
 .top {
-    position: absolute;
-    left: 4px;
-    top: 0;
     height: 28px;
-    right: 120px;
+    padding-left: 4px;
     display: flex;
     align-items: center;
     gap: 12px;
@@ -38,6 +35,10 @@ body {
     text-shadow: 0 0 3px #000, 0 0 3px #000;
     white-space: nowrap;
     overflow: hidden;
+}
+
+.top.empty {
+    display: none;
 }
 
 .label.groove { color: #13d4dd; }

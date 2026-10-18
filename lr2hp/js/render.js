@@ -7,7 +7,8 @@ const NUM_W = 26;
 const NUM_H = 28;
 const DOT_X = 286;
 const DOT_W = 8;
-const NUM_GAP = 6;
+const NUM_GAP = 8; // between the bar and the number
+const NUM_BOX = 112; // "xxx.x": 3 digits, dot, 1 digit
 const BAR_H = 36;
 
 // beatoraja's 8-node mapping: node row 0 (n1..n4) is used by GROOVE and HARD,
@@ -46,12 +47,16 @@ export class GaugeRenderer {
 
     setParts(parts) {
         this.parts = Math.max(10, Math.min(200, Math.round(parts) || 50));
-        this.canvas.width = this.parts * SEG_W;
-        this.canvas.height = NUM_H + NUM_GAP + BAR_H;
+        this.canvas.width = this.parts * SEG_W + NUM_GAP + NUM_BOX;
+        this.canvas.height = BAR_H;
     }
 
     get barWidth() {
         return this.parts * SEG_W;
+    }
+
+    get width() {
+        return this.canvas.width;
     }
 
     // Source rect of node `slot` (0 lit/above border, 1 lit/below, 2 dark/above, 3 dark/below)
@@ -76,7 +81,7 @@ export class GaugeRenderer {
         const parts = this.parts;
         const lit = value > 0 ? Math.max(1, Math.floor(value * parts / max)) : 0;
         const segW = this.barWidth / parts;
-        const y = NUM_H + NUM_GAP;
+        const y = 0;
 
         ctx.imageSmoothingEnabled = false;
         for (let i = 1; i <= parts; i++) {
@@ -89,20 +94,21 @@ export class GaugeRenderer {
         if (showNumber) this.drawNumber(value);
     }
 
-    // "xxx.x" in the skin's digits, right-aligned like the skin (num_x = width - 112)
+    // "xxx.x" in the skin's digits, to the right of the bar and centred on it
     drawNumber(value) {
         const ctx = this.ctx;
         const num = this.skin.num;
         const v = Math.max(0, value);
         const intPart = Math.floor(v);
         const frac = Math.floor(v * 10) % 10;
-        const x0 = this.barWidth - 112;
+        const x0 = this.barWidth + NUM_GAP;
+        const y = (BAR_H - NUM_H) / 2;
         const digits = String(intPart).padStart(3, ' ');
         for (let i = 0; i < 3; i++) {
             if (digits[i] === ' ') continue;
-            ctx.drawImage(num, Number(digits[i]) * NUM_W, 0, NUM_W, NUM_H, x0 + i * NUM_W, 0, NUM_W, NUM_H);
+            ctx.drawImage(num, Number(digits[i]) * NUM_W, 0, NUM_W, NUM_H, x0 + i * NUM_W, y, NUM_W, NUM_H);
         }
-        ctx.drawImage(num, DOT_X, 0, DOT_W, NUM_H, x0 + 78, 0, DOT_W, NUM_H);
-        ctx.drawImage(num, frac * NUM_W, 0, NUM_W, NUM_H, x0 + 86, 0, NUM_W, NUM_H);
+        ctx.drawImage(num, DOT_X, 0, DOT_W, NUM_H, x0 + 78, y, DOT_W, NUM_H);
+        ctx.drawImage(num, frac * NUM_W, 0, NUM_W, NUM_H, x0 + 86, y, NUM_W, NUM_H);
     }
 }

@@ -13,7 +13,7 @@ osu!lazer 매니아용 LR2 HP 게이지 [tosu](https://github.com/tosuapp/tosu) 
 1. `lr2hp`와 `lr2hp-dashboard` 폴더를 tosu의 `static` 폴더에 복사합니다. 예: `tosu/static/lr2hp`, `tosu/static/lr2hp-dashboard`
 2. tosu 대시보드(`http://127.0.0.1:24050`)에서 **LR2 HP**와 **LR2 HP Dashboard**를 찾아 설정합니다.
 3. OBS 브라우저 소스 URL
-   - 게이지: `http://127.0.0.1:24050/lr2hp/` (기본 크기 600x70, 세그먼트 수에 따라 폭이 달라집니다)
+   - 게이지: `http://127.0.0.1:24050/lr2hp/` (기본 크기 720x64, 세그먼트 수에 따라 폭이 달라집니다)
    - 대시보드: `http://127.0.0.1:24050/lr2hp-dashboard/` (230x260)
 
 대시보드는 게이지 오버레이의 코드를 함께 쓰고, 키 배치와 공POOR 설정도 게이지 오버레이(**LR2 HP**) 쪽 설정을 그대로 읽습니다. 그래서 두 폴더를 나란히 설치해야 합니다.
