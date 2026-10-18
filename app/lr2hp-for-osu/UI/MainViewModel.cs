@@ -82,9 +82,16 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private IBrush rankBrush = Brushes.White;
     public IBrush RankBrush { get => rankBrush; private set => Set(ref rankBrush, value); }
 
-    private bool lampBlinks;
-    /// <summary>EX-HARD flashes like a beatoraja lamp; the others pulse gently</summary>
-    public bool LampBlinks { get => lampBlinks; private set => Set(ref lampBlinks, value); }
+    // Blinking lamps, as in the m_select skin: EX-HARD swaps to its second colour every 50 ms
+    // (100 ms cycle), FAILED every 25 ms (50 ms cycle). The others stay still.
+    private IBrush bestFlashBrush = Brushes.Transparent;
+    public IBrush BestFlashBrush { get => bestFlashBrush; private set => Set(ref bestFlashBrush, value); }
+
+    private bool lampFlashSlow;
+    public bool LampFlashSlow { get => lampFlashSlow; private set => Set(ref lampFlashSlow, value); }
+
+    private bool lampFlashFast;
+    public bool LampFlashFast { get => lampFlashFast; private set => Set(ref lampFlashFast, value); }
 
     private string noBestText = "";
     public string NoBestText { get => noBestText; private set => Set(ref noBestText, value); }
@@ -111,6 +118,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         "hard" => "LampHardBrush",
         "groove" => "LampGrooveBrush",
         "easy" => "LampEasyBrush",
+        "failed" => "LampFailedBrush",
         _ => "LampNoneBrush",
     });
 
@@ -174,7 +182,14 @@ public sealed class MainViewModel : INotifyPropertyChanged
             BestHeader = $"Best · {rateKey}×{(s.Keys > 0 ? $" · {s.Keys}K" : "")} · {ClearStore.TotalLabel(lamp)}";
             BestLamp = ClearStore.Label(lamp.Lamp);
             BestBrush = LampBrush(lamp.Lamp);
-            LampBlinks = lamp.Lamp == "exhard";
+            LampFlashSlow = lamp.Lamp == "exhard";
+            LampFlashFast = lamp.Lamp == "failed";
+            BestFlashBrush = lamp.Lamp switch
+            {
+                "exhard" => ThemeService.Brush(window, "LampExHardFlashBrush"),
+                "failed" => ThemeService.Brush(window, "LampFailedFlashBrush"),
+                _ => Brushes.Transparent,
+            };
             BestDetail = $"EX {score.ExScore:N0} · {score.ScoreRate * 100:0.00}% · BP {here.BestBp}";
             (RankText, RankDiff) = ClearStore.RankOf(score.ExScore, score.Notes);
             RankBrush = ThemeService.Brush(window, RankText switch

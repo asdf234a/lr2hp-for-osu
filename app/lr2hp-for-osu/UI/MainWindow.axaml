@@ -103,18 +103,10 @@
         <!-- Best clear at the selected rate -->
         <Border Background="{DynamicResource TargetRowBrush}" CornerRadius="10" ClipToBounds="True" IsVisible="{Binding HasBest}" ToolTip.Tip="{Binding BestTip}">
           <Grid ColumnDefinitions="Auto,*,Auto">
-            <!-- Clear lamp, like a beatoraja / LR2 song list lamp -->
+            <!-- Clear lamp, as the m_select skin's song list draws it -->
             <Panel Width="10">
-              <Border Classes="lamp" Classes.flash="{Binding LampBlinks}" Background="{Binding BestBrush}" />
-              <Border>
-                <Border.Background>
-                  <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
-                    <GradientStop Offset="0" Color="#00FFFFFF" />
-                    <GradientStop Offset="0.45" Color="#66FFFFFF" />
-                    <GradientStop Offset="1" Color="#00FFFFFF" />
-                  </LinearGradientBrush>
-                </Border.Background>
-              </Border>
+              <Border Background="{Binding BestBrush}" />
+              <Border Classes="lampflash" Classes.slow="{Binding LampFlashSlow}" Classes.fast="{Binding LampFlashFast}" Background="{Binding BestFlashBrush}" />
             </Panel>
             <StackPanel Grid.Column="1" Spacing="1" Margin="12,10,8,10">
               <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TargetLabelBrush}" Text="{Binding BestHeader}" TextTrimming="CharacterEllipsis" />

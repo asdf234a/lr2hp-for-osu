@@ -30,11 +30,15 @@ public static class ThemeService
         ["HoverCardBrush"] = ("#1E2330", "#FFFFFF"),
         ["HoverCardBorderBrush"] = ("#2E3441", "#D3D8E0"),
 
-        // Clear lamps, in beatoraja's colours
-        ["LampExHardBrush"] = ("#F5C451", "#B07A00"),
-        ["LampHardBrush"] = ("#FF8A8A", "#C02626"),
-        ["LampGrooveBrush"] = ("#60A5FA", "#2F6FD6"),
-        ["LampEasyBrush"] = ("#6EE7A0", "#1B7A43"),
+        // Clear lamps, from the m_select skin's clearlamp.png (the second colour is the blink frame).
+        // Light mode darkens them so HARD's white and EASY's green stay readable.
+        ["LampExHardBrush"] = ("#FF9900", "#E68A00"),
+        ["LampExHardFlashBrush"] = ("#FF0000", "#E00000"),
+        ["LampHardBrush"] = ("#FFFFFF", "#7A8291"),
+        ["LampGrooveBrush"] = ("#00BAFF", "#0095D9"),
+        ["LampEasyBrush"] = ("#00FF00", "#00A800"),
+        ["LampFailedBrush"] = ("#FF0000", "#E00000"),
+        ["LampFailedFlashBrush"] = ("#993300", "#993300"),
         ["LampNoneBrush"] = ("#5F6776", "#9AA3B2"),
         ["RankAaaBrush"] = ("#F5C451", "#A86B00"),
     };
