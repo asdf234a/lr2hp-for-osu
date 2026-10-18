@@ -47,19 +47,37 @@ public sealed partial class KeyPoller : IDisposable
         thread.Start();
     }
 
+    /// <summary>The process id of the osu! window last seen in the foreground (0 if none).</summary>
+    private uint targetPid;
+
     private bool IsTargetFocused()
     {
         try
         {
             GetWindowThreadProcessId(GetForegroundWindow(), out var pid);
             if (pid == 0) return false;
+            if (pid == targetPid) return true;
             using var p = Process.GetProcessById((int)pid);
-            return string.Equals(p.ProcessName, ProcessName, StringComparison.OrdinalIgnoreCase);
+            if (!string.Equals(p.ProcessName, ProcessName, StringComparison.OrdinalIgnoreCase)) return false;
+            targetPid = pid;
+            return true;
         }
         catch
         {
             return false;
         }
+    }
+
+    /// <summary>
+    /// A cheap check, made on every key press: is the foreground window still the osu! process we
+    /// last saw? The full check runs only every 100 ms, so without this the first keys typed right
+    /// after switching to another window could still go out.
+    /// </summary>
+    private bool StillTargetFocused()
+    {
+        if (targetPid == 0) return false;
+        GetWindowThreadProcessId(GetForegroundWindow(), out var pid);
+        return pid == targetPid;
     }
 
     private void Loop()
@@ -70,6 +88,9 @@ public sealed partial class KeyPoller : IDisposable
             // Mouse buttons and the generic shift/ctrl/alt codes are skipped; their left/right codes are polled
             var vks = Enumerable.Range(0x08, 0xFE - 0x08 + 1).Where(vk => vk is not (0x10 or 0x11 or 0x12)).ToArray();
             var down = new bool[256];
+            // Keys whose press went out to the overlays. Only these get a release, so keys typed
+            // while another window has focus never leave this process, not even as releases.
+            var sent = new bool[256];
             long nextFocusCheck = 0;
             while (running)
             {
@@ -89,8 +110,19 @@ public sealed partial class KeyPoller : IDisposable
                     var d = (GetAsyncKeyState(vk) & 0x8000) != 0;
                     if (d == down[vk]) continue;
                     down[vk] = d;
-                    // Releases always go out so the overlay never sees a stuck key
-                    if (Focused || !d) KeyChanged?.Invoke(vk, d, clock.ElapsedMilliseconds);
+                    if (d)
+                    {
+                        if (!Focused || !StillTargetFocused()) continue;
+                        sent[vk] = true;
+                        KeyChanged?.Invoke(vk, true, clock.ElapsedMilliseconds);
+                    }
+                    else if (sent[vk])
+                    {
+                        // A key pressed in osu! and released after switching away still gets its
+                        // release, so the overlay never sees a stuck key
+                        sent[vk] = false;
+                        KeyChanged?.Invoke(vk, false, clock.ElapsedMilliseconds);
+                    }
                 }
                 Thread.Sleep(1);
             }
