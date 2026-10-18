@@ -1,0 +1,34 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <RuntimeIdentifier>win-x64</RuntimeIdentifier>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>LR2HP</AssemblyName>
+    <RootNamespace>LR2HP</RootNamespace>
+    <Version>0.1.0</Version>
+    <DebugType>none</DebugType>
+    <SelfContained>false</SelfContained>
+    <PublishSingleFile>true</PublishSingleFile>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="12.0.3" />
+    <PackageReference Include="Avalonia.Desktop" Version="12.0.3" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="12.0.3" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="12.0.3" />
+    <!-- Same Realm as osu!lazer, so lazer's client.realm opens as is -->
+    <PackageReference Include="Realm" Version="20.1.0" />
+  </ItemGroup>
+
+  <Target Name="RemoveNativeSymbolsFromPublish" AfterTargets="ComputeResolvedFilesToPublishList">
+    <ItemGroup>
+      <ResolvedFileToPublish Remove="@(ResolvedFileToPublish)" Condition="'%(Extension)' == '.pdb'" />
+    </ItemGroup>
+  </Target>
+
+</Project>

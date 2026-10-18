@@ -1,0 +1,104 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+  <!-- Colours are the palette in UI/ThemeService.cs; the look follows Lazer Replay Compare's compact window. -->
+
+  <Style Selector="Window">
+    <Setter Property="Background" Value="{DynamicResource PageBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    <Setter Property="FontSize" Value="14" />
+  </Style>
+
+  <Style Selector=":is(Control)">
+    <Setter Property="ToolTip.ShowDelay" Value="120" />
+  </Style>
+  <Style Selector="ToolTip">
+    <Setter Property="Background" Value="{DynamicResource HoverCardBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource HoverCardBorderBrush}" />
+    <Setter Property="BorderThickness" Value="1" />
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="Padding" Value="10,7" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    <Setter Property="FontSize" Value="12" />
+  </Style>
+
+  <Style Selector="TextBlock.secondary">
+    <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}" />
+  </Style>
+  <Style Selector="TextBlock.muted">
+    <Setter Property="Foreground" Value="{DynamicResource TextMutedBrush}" />
+  </Style>
+  <Style Selector="TextBlock.mono">
+    <Setter Property="FontFeatures" Value="+tnum" />
+  </Style>
+
+  <!-- Connection pill -->
+  <Style Selector="Border.pill">
+    <Setter Property="CornerRadius" Value="999" />
+    <Setter Property="Background" Value="{DynamicResource ErrorBackgroundBrush}" />
+  </Style>
+  <Style Selector="Border.pill TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource ErrorTextBrush}" />
+    <Setter Property="FontWeight" Value="Medium" />
+  </Style>
+  <Style Selector="Border.pill Ellipse">
+    <Setter Property="Fill" Value="{DynamicResource NegativeTextBrush}" />
+  </Style>
+  <Style Selector="Border.pill.ok">
+    <Setter Property="Background" Value="{DynamicResource GoodBackgroundBrush}" />
+  </Style>
+  <Style Selector="Border.pill.ok TextBlock">
+    <Setter Property="Foreground" Value="{DynamicResource GoodTextBrush}" />
+  </Style>
+  <Style Selector="Border.pill.ok Ellipse">
+    <Setter Property="Fill" Value="{DynamicResource PositiveTextBrush}" />
+  </Style>
+
+  <!-- Rate chips under the card -->
+  <Style Selector="Border.chip">
+    <Setter Property="Background" Value="{DynamicResource ChipBrush}" />
+    <Setter Property="CornerRadius" Value="999" />
+    <Setter Property="Padding" Value="9,3" />
+  </Style>
+
+  <!-- Clear lamp bar at the card's left edge: pulses, EX-HARD flashes -->
+  <Style Selector="Border.lamp">
+    <Style.Animations>
+      <Animation Duration="0:0:1.4" IterationCount="INFINITE" PlaybackDirection="Alternate" Easing="SineEaseInOut">
+        <KeyFrame Cue="0%">
+          <Setter Property="Opacity" Value="1" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Opacity" Value="0.6" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+  <Style Selector="Border.lamp.flash">
+    <Style.Animations>
+      <Animation Duration="0:0:0.12" IterationCount="INFINITE" PlaybackDirection="Alternate">
+        <KeyFrame Cue="0%">
+          <Setter Property="Opacity" Value="1" />
+        </KeyFrame>
+        <KeyFrame Cue="100%">
+          <Setter Property="Opacity" Value="0.35" />
+        </KeyFrame>
+      </Animation>
+    </Style.Animations>
+  </Style>
+
+  <!-- Buttons -->
+  <Style Selector="Button">
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="VerticalContentAlignment" Value="Center" />
+    <Setter Property="HorizontalContentAlignment" Value="Center" />
+    <Setter Property="Background" Value="{DynamicResource ButtonBrush}" />
+    <Setter Property="Foreground" Value="{DynamicResource TextBrush}" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="Button:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ButtonHoverBrush}" />
+  </Style>
+  <Style Selector="Button.ghost Path">
+    <Setter Property="Stroke" Value="{DynamicResource TextSecondaryBrush}" />
+  </Style>
+</Styles>

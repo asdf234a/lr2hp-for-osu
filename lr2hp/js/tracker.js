@@ -84,10 +84,11 @@ function rateOf(data) {
 }
 
 export class PlayTracker {
-    // keybindsUrl: where keyhook/sync-keys.mjs saved osu!'s key bindings
-    constructor({ host, settings, debug = false, keybindsUrl = 'keybinds.json' }) {
-        this.keybindsUrl = keybindsUrl;
-        this.synced = null; // { lazer: { [keys]: layout }, stable: { ... } }
+    // name: tells the LR2 HP app which overlay this is; reportClears: send clears to it
+    constructor({ host, settings, debug = false, name = 'overlay', reportClears = false }) {
+        this.name = name;
+        this.reportClears = reportClears;
+        this.synced = null; // key layouts from the LR2 HP app: { lazer: { [keys]: layout }, stable: { ... } }
         this.client = 'lazer';
         this.host = host;
         this.settings = settings;
@@ -133,7 +134,6 @@ export class PlayTracker {
         });
         // Keep settling presses while the overlay is hidden (rAF may be throttled)
         setInterval(() => this.settlePresses(performance.now()), 20);
-        this.loadKeybinds();
         this.applySettings();
     }
 
@@ -196,7 +196,7 @@ export class PlayTracker {
     startPlay(data) {
         this.isLazer = data.client === 'lazer';
         this.client = this.isLazer ? 'lazer' : 'stable';
-        this.loadKeybinds();
+        this.clearSent = false;
         this.session = this.newSession(this.notesFromStats(data));
         this.classifier = null;
         this.inResults = false;
@@ -229,17 +229,6 @@ export class PlayTracker {
                 mode: this.settings.emptyPoorMode,
             });
         });
-    }
-
-    // Picks up keybinds.json again at every play, so a fresh sync applies right away
-    async loadKeybinds() {
-        try {
-            const res = await fetch(`${this.keybindsUrl}?${Date.now()}`, { cache: 'no-store' });
-            this.synced = res.ok ? await res.json() : null;
-        } catch {
-            this.synced = null;
-        }
-        if (this.chart) this.updateLayout();
     }
 
     // osu!'s own layout for this key count when synced, else the typed-in one
@@ -302,6 +291,7 @@ export class PlayTracker {
             const hits = data.resultsScreen?.hits;
             if (hits && !this.inResults) this.session.applyHits(hits, now);
             this.inResults = true;
+            this.sendClear(data);
             this.visible = true;
         } else {
             // Keep the last play around so it can stay on screen when hiding is off
@@ -339,6 +329,36 @@ export class PlayTracker {
         }
     }
 
+    // A cleared play goes to the LR2 HP app, which keeps the best lamp per map and rate
+    sendClear(data) {
+        if (!this.reportClears || this.clearSent || !this.helperConnected || !this.helper) return;
+        const s = this.session;
+        const lamp = s?.gauges.clearType();
+        if (!lamp) return;
+        this.clearSent = true;
+        const b = this.lastData?.beatmap || data.beatmap || {};
+        const gauges = {};
+        for (const [type, g] of Object.entries(s.gauges.gauges)) gauges[type] = Math.round(g.value * 100) / 100;
+        this.helper.send(JSON.stringify({
+            type: 'clear',
+            checksum: b.checksum || '',
+            client: this.client,
+            keys: this.chart?.keys || 0,
+            rate: rateOf(this.lastData || data),
+            mods: this.lastData?.play?.mods?.name || '',
+            lamp,
+            gauges,
+            total: { mode: this.settings.totalMode, value: Math.round(s.total * 100) / 100 },
+            notes: s.notes,
+            exScore: s.exScore,
+            scoreRate: Math.round(s.rate * 1e6) / 1e6,
+            counts: s.counts,
+            emptyPoor: s.emptyPoor,
+            maxCombo: s.maxCombo,
+            beatmap: { title: b.titleUnicode || b.title || '', artist: b.artistUnicode || b.artist || '', version: b.version || '', mapper: b.mapper || '' },
+        }));
+    }
+
     // ------------------------------------------------------------ key helper
 
     connectHelper() {
@@ -354,7 +374,8 @@ export class PlayTracker {
         this.helper?.close();
         this.helperPort = port;
         this.helper = connect(`ws://127.0.0.1:${port}/`, {
-            onOpen: () => {
+            onOpen: (ws) => {
+                ws.send(JSON.stringify({ type: 'hello', overlay: this.name }));
                 this.helperConnected = true;
                 this.helperOffset = null;
             },
@@ -362,6 +383,11 @@ export class PlayTracker {
                 this.helperConnected = false;
             },
             onMessage: (msg) => {
+                if (msg.type === 'keybinds') {
+                    this.synced = { lazer: msg.lazer || {}, stable: msg.stable || {} };
+                    this.updateLayout();
+                    return;
+                }
                 if (msg.d !== 1 || !this.chart) return;
                 const column = this.layout.get(msg.vk);
                 if (column === undefined) {

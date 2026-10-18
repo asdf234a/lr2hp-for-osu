@@ -7,7 +7,8 @@ osu!lazer 매니아용 LR2 HP 게이지 [tosu](https://github.com/tosuapp/tosu) 
 - 게이지 그림은 beatoraja `simple-play` 스킨의 `customize/gauge`(simple2 / simple / default)를 그대로 씁니다.
 - **대시보드 오버레이**(`lr2hp-dashboard`): BMS 기준 랭크, EX 스코어, 스코어 레이트, 판정 카운트(FAST/SLOW 포함), MAX 콤보를 같은 스킨의 카운터·랭크 이미지로 보여줍니다.
 - **공POOR 표시 오버레이**(`lr2hp-emptypoor`): 공POOR가 날 때마다 스킨의 POOR 판정 이미지(기본 Iridium의 MISS)를 beatoraja처럼 500ms 동안 띄웁니다.
-- 대상: osu!lazer, 1~7K. 스테이블은 지원 대상이 아닙니다.
+- **LR2HP.exe**: 키 입력 헬퍼, osu! 키 설정 동기화, 클리어 램프 기록을 맡는 작은 앱입니다. 기록과 설정은 exe와 같은 폴더에만 저장합니다.
+- 대상: osu!lazer, 1~7K. 키 설정 동기화는 stable도 지원합니다.
 
 ## 설치
 
@@ -16,8 +17,9 @@ osu!lazer 매니아용 LR2 HP 게이지 [tosu](https://github.com/tosuapp/tosu) 
    ```
    python tools/import_judges.py "<beatoraja>/skin/<simple-play>/customize/judge" "<tosu>/static/lr2hp-emptypoor/skins/judge"
    ```
-3. tosu 대시보드(`http://127.0.0.1:24050`)에서 **LR2 HP**, **LR2 HP Dashboard**, **LR2 HP Empty POOR**를 찾아 설정합니다.
-4. OBS 브라우저 소스 URL
+3. `LR2HP.exe`를 원하는 폴더(예: `tosu/LR2HP/`)에 두고 실행합니다. .NET 10 런타임이 필요합니다.
+4. tosu 대시보드(`http://127.0.0.1:24050`)에서 **LR2 HP**, **LR2 HP Dashboard**, **LR2 HP Empty POOR**를 찾아 설정합니다.
+5. OBS 브라우저 소스 URL
    - 게이지: `http://127.0.0.1:24050/lr2hp/` (기본 크기 720x64. 폭은 게이지 길이 + 120px이며, 길이는 설정의 `Gauge length`로 바꿀 수 있습니다)
    - 대시보드: `http://127.0.0.1:24050/lr2hp-dashboard/` (230x260)
    - 공POOR 표시: `http://127.0.0.1:24050/lr2hp-emptypoor/` (Iridium 기준 76x32, 판정 이미지마다 다릅니다)
@@ -80,26 +82,41 @@ osu! 자체 HP로 실패하면 플레이가 끝나므로 **NF(No Fail)** 를 켜
 | 경우 | 입력 출처 |
 |---|---|
 | 1~4K | tosu만으로 동작 (`/websocket/v2/precise`의 키 카운터) |
-| 5~7K | **키 헬퍼 필요**: `keyhook/start-keyhook.bat` 실행 |
+| 5~7K | **LR2HP.exe 필요** |
 
-tosu API는 키 카운터를 4개(`k1, k2, m1, m2`)까지만 내보내기 때문에 5K 이상은 tosu만으로는 알 수 없습니다. 헬퍼가 켜져 있으면 키 수와 상관없이 헬퍼 입력을 우선 사용합니다. 헬퍼 입력을 레인에 맞추려면 키 배치가 필요한데, 아래의 키 설정 동기화로 osu! 설정을 그대로 가져옵니다. 노트 입력은 hitErrors로 확정되므로 레인 배치가 틀려도 영향이 적지만, 공POOR와 이른 MISS 구분에는 레인이 쓰입니다.
+tosu API는 키 카운터를 4개(`k1, k2, m1, m2`)까지만 내보내기 때문에 5K 이상은 tosu만으로는 알 수 없습니다. LR2HP.exe가 켜져 있으면 키 수와 상관없이 그 입력을 우선 사용합니다. 입력을 레인에 맞추는 키 배치는 LR2HP.exe가 osu! 설정에서 그대로 가져옵니다. 노트 입력은 hitErrors로 확정되므로 레인 배치가 틀려도 영향이 적지만, 공POOR와 이른 MISS 구분에는 레인이 쓰입니다.
 
-### 키 설정 동기화 (lazer / stable)
+## LR2HP.exe
 
-`start-keyhook.bat`은 헬퍼를 켜기 전에 osu!의 매니아 키 설정을 읽어 오버레이 폴더의 `keybinds.json`에 저장합니다. 따로 실행하려면 `sync-keys.bat`을 씁니다. Node.js가 필요하고, 처음 실행할 때 `realm` 패키지를 자동으로 설치합니다.
+[Lazer Replay Compare](https://github.com/asdf234a/LazerReplayCompare)의 compact 창과 같은 모양의 작은 앱입니다(Avalonia, .NET 10, 단일 exe). 항상 위에 떠 있고, 창 아무 곳이나 끌어서 옮깁니다.
 
-- **lazer**: 데이터 폴더의 `client.realm`(Realm 데이터베이스)에서 읽습니다. 게임이 쓰고 있는 원본은 열지 않고 임시 복사본을 읽은 뒤 지웁니다.
-- **stable**: 게임 폴더의 `osu!.<Windows 사용자 이름>.cfg`에서 `ManiaLayoutsNK` 줄을 읽습니다.
-- 폴더 위치: tosu가 켜져 있으면 tosu가 붙어 있는 클라이언트의 폴더를 씁니다(lazer는 `folders.songs`의 상위 폴더, stable은 `folders.game`). 그 밖에는 lazer는 `%APPDATA%\osu\storage.ini`, stable은 레지스트리의 osu! 실행 경로에서 찾습니다. `--lazer <폴더>`, `--stable <폴더>`, `--out <오버레이 폴더>`로 직접 지정할 수도 있습니다.
-- 오버레이는 지금 플레이 중인 클라이언트(lazer/stable)의 배치를 씁니다. 동기화된 배치가 없는 키 수는 설정의 키 배치(`7K keys` 등)를 씁니다. 설정 **Key layout source**를 `manual`로 바꾸면 항상 설정의 키 배치를 씁니다.
-- osu!에서 키를 바꿨다면 `sync-keys.bat`을 다시 실행하세요. 다음 곡부터 적용됩니다.
+- **키 입력 헬퍼**: `GetAsyncKeyState`로 키보드 상태를 1ms마다 읽어 osu! 창이 포커스일 때만 `ws://127.0.0.1:24055`로 오버레이에 보냅니다. 키 뷰어 프로그램과 같은 방식이라 osu! 프로세스의 메모리를 읽거나 쓰지 않고, DLL 주입이나 입력 전송도 하지 않습니다.
+- **키 설정 동기화 (lazer / stable)**: 켤 때, tosu가 다른 클라이언트에 붙을 때, ↻ 버튼을 누를 때 osu!의 매니아 키 설정을 읽어 오버레이에 보냅니다.
+  - lazer: 데이터 폴더의 `client.realm`을 레이저와 같은 Realm(20.1.0)으로 읽습니다. 게임이 쓰는 원본은 열지 않고 임시 복사본을 읽은 뒤 지웁니다.
+  - stable: 게임 폴더의 `osu!.<Windows 사용자 이름>.cfg`에서 `ManiaLayoutsNK` 줄을 읽습니다.
+  - 폴더는 tosu가 알려주는 경로(lazer는 `folders.songs`의 상위, stable은 `folders.game`)를 먼저 쓰고, 그 밖에는 `%APPDATA%\osu\storage.ini`와 레지스트리의 osu! 경로에서 찾습니다.
+  - 오버레이는 지금 플레이 중인 클라이언트의 배치를 씁니다. 동기화된 배치가 없는 키 수는 설정의 키 배치(`7K keys` 등)를 쓰고, **Key layout source**를 `manual`로 바꾸면 항상 설정의 키 배치를 씁니다.
+- **클리어 램프 기록**: 게이지 오버레이가 결과 화면에서 클리어(GAS 범위 안에서 조건을 만족한 가장 높은 게이지)를 보내면, **맵(난이도 MD5) + 배속**별로 저장합니다. 기록에는 램프(EASY / CLEAR / HARD / EX-HARD), TOTAL 옵션과 값(standard / lr2 / beatoraja / custom), EX 스코어, 판정 수, 공POOR, 게이지별 최종값, 날짜가 들어갑니다.
+- **화면**: 연결 상태(tosu, 오버레이), 선택된 곡, 지금 배속의 기록 카드, 다른 배속의 램프, 쓰고 있는 키 배치를 보여줍니다. 기록 카드는 이렇게 생겼습니다.
+  - 왼쪽: 클리어 램프 바(EASY 초록, CLEAR 파랑, HARD 빨강, EX-HARD 노랑). 은은하게 깜빡이고, EX-HARD는 빠르게 깜빡입니다.
+  - 가운데: 램프 이름, 그리고 그 배속의 최고 EX 스코어, 스코어 레이트, 최저 BP(BAD + POOR + 공POOR)
+  - 오른쪽: BMS 랭크(AAA / AA / A …)와 가까운 랭크 경계까지의 점수. 예: `AAA-0006`(AAA까지 6점), `AA+0012`(AA보다 12점 위), `MAX-0004`(만점까지 4점)
 
-### 키 헬퍼
+### 저장 파일 (exe와 같은 폴더)
 
-- 별도 설치가 필요 없는 PowerShell 스크립트입니다. Windows 기본 .NET으로 컴파일됩니다.
-- `GetAsyncKeyState`로 키보드 상태를 읽기만 합니다. osu! 프로세스의 메모리를 읽거나 쓰지 않고, DLL 주입이나 입력 전송도 하지 않습니다.
-- osu! 창이 포커스일 때만 키 정보를 `ws://127.0.0.1:24055`로 보냅니다(로컬 전용).
-- 포트와 프로세스 이름은 `powershell -File lr2hp-keys.ps1 -Port 24055 -Process "osu!"`처럼 바꿀 수 있습니다.
+| 파일 | 내용 |
+|---|---|
+| `clears.json` | 클리어 기록 |
+| `keybinds.json` | 마지막으로 읽은 lazer / stable 키 배치 |
+| `settings.json` | 포트(24055), tosu 주소, 대상 프로세스 이름(`osu!`), 테마(`Dark` / `Light` / `System`), 창 위치 |
+
+폴더째 옮기거나 복사해도 기록이 그대로 따라갑니다.
+
+### 빌드
+
+```
+dotnet publish app/LR2HP -c Release -o app/publish
+```
 
 ## 한계
 

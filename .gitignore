@@ -2,5 +2,6 @@ node_modules/
 *.log
 .claude/settings.local.json
 lr2hp-emptypoor/skins/judge/
-keyhook/node_modules/
-keyhook/package-lock.json
+app/**/bin/
+app/**/obj/
+app/publish/

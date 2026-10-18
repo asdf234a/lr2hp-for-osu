@@ -31,7 +31,8 @@ const els = {
     top: document.querySelector('.top'),
 };
 const renderer = new GaugeRenderer(els.canvas);
-const tracker = new PlayTracker({ host, settings, debug: params.has('debug') });
+// Only the gauge overlay reports clears, so the app gets each one once
+const tracker = new PlayTracker({ host, settings, debug: params.has('debug'), name: 'gauge', reportClears: !demo });
 
 async function applySettings(next = {}) {
     Object.assign(settings, next);

@@ -1,0 +1,132 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        x:Class="LR2HP.UI.MainWindow"
+        x:CompileBindings="False"
+        Title="LR2 HP"
+        Width="380"
+        SizeToContent="Height"
+        CanResize="False"
+        Topmost="True"
+        WindowDecorations="BorderOnly"
+        ExtendClientAreaToDecorationsHint="True"
+        ExtendClientAreaTitleBarHeightHint="0"
+        Background="{DynamicResource PageBrush}">
+  <Grid Background="Transparent" PointerPressed="DragWindow">
+    <!-- Beatmap background under everything, faded into the page colour -->
+    <Panel ClipToBounds="True" IsHitTestVisible="False">
+      <!-- A brush, not an Image: the picture must not size the window -->
+      <Border>
+        <Border.Background>
+          <ImageBrush Source="{Binding BackgroundImage}" Stretch="UniformToFill" AlignmentY="Top" />
+        </Border.Background>
+      </Border>
+      <Border>
+        <Border.Background>
+          <LinearGradientBrush StartPoint="0%,0%" EndPoint="0%,100%">
+            <GradientStop Offset="0" Color="{DynamicResource BannerScrim62Color}" />
+            <GradientStop Offset="0.45" Color="{DynamicResource BannerScrim80Color}" />
+            <GradientStop Offset="1" Color="{DynamicResource BannerScrim92Color}" />
+          </LinearGradientBrush>
+        </Border.Background>
+      </Border>
+    </Panel>
+
+    <StackPanel>
+      <Border Padding="16,8,10,8">
+        <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="10">
+          <Border Classes="pill" Classes.ok="{Binding AllConnected}" Padding="10,4" ToolTip.Tip="{Binding ConnectionDetails}">
+            <StackPanel Orientation="Horizontal" Spacing="6">
+              <Ellipse Width="7" Height="7" VerticalAlignment="Center" />
+              <TextBlock Text="{Binding ConnectionText}" FontSize="12" VerticalAlignment="Center" />
+            </StackPanel>
+          </Border>
+          <StackPanel Grid.Column="2" Orientation="Horizontal" Spacing="4">
+            <Button Classes="ghost" MinHeight="32" Padding="8,0" Click="SyncKeys" ToolTip.Tip="Read the key bindings from osu!lazer and osu!stable again">
+              <Button.Background>
+                <SolidColorBrush Color="{DynamicResource BannerScrim62Color}" />
+              </Button.Background>
+              <Path Width="14" Height="14" Stretch="Uniform" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
+                    Data="M20,11 A8,8 0 1 0 17.7,16.7 M20,5 L20,11 L14,11" />
+            </Button>
+            <Button Classes="ghost" MinHeight="32" Padding="8,0" Click="OpenFolder" ToolTip.Tip="Open the folder with clears.json and keybinds.json">
+              <Button.Background>
+                <SolidColorBrush Color="{DynamicResource BannerScrim62Color}" />
+              </Button.Background>
+              <Path Width="15" Height="13" Stretch="Uniform" StrokeThickness="2" StrokeLineCap="Round" StrokeJoin="Round"
+                    Data="M3,6 L3,19 L21,19 L21,8 L11,8 L9,5 L3,5 Z" />
+            </Button>
+            <Button Classes="ghost" MinHeight="32" Padding="8,0" Click="CloseApp" ToolTip.Tip="Close LR2 HP">
+              <Button.Background>
+                <SolidColorBrush Color="{DynamicResource BannerScrim62Color}" />
+              </Button.Background>
+              <Path Width="12" Height="12" Stretch="Uniform" StrokeThickness="2" StrokeLineCap="Round"
+                    Data="M6,6 L18,18 M18,6 L6,18" />
+            </Button>
+          </StackPanel>
+        </Grid>
+      </Border>
+
+      <StackPanel Margin="16,12,16,14" Spacing="10">
+        <Border Classes="pill" Padding="10,6" CornerRadius="8" IsVisible="{Binding HasError}">
+          <TextBlock Text="{Binding ErrorText}" FontSize="12" TextWrapping="Wrap" />
+        </Border>
+
+        <StackPanel Spacing="1">
+          <TextBlock Text="{Binding BeatmapTitle}" FontSize="15" FontWeight="Bold" TextTrimming="CharacterEllipsis" />
+          <TextBlock Classes="secondary" FontSize="12" Text="{Binding BeatmapSubtitle}" TextTrimming="CharacterEllipsis" />
+        </StackPanel>
+
+        <!-- Best clear at the selected rate -->
+        <Border Background="{DynamicResource TargetRowBrush}" CornerRadius="10" ClipToBounds="True" IsVisible="{Binding HasBest}" ToolTip.Tip="{Binding BestTip}">
+          <Grid ColumnDefinitions="Auto,*,Auto">
+            <!-- Clear lamp, like a beatoraja / LR2 song list lamp -->
+            <Panel Width="10">
+              <Border Classes="lamp" Classes.flash="{Binding LampBlinks}" Background="{Binding BestBrush}" />
+              <Border>
+                <Border.Background>
+                  <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,0%">
+                    <GradientStop Offset="0" Color="#00FFFFFF" />
+                    <GradientStop Offset="0.45" Color="#66FFFFFF" />
+                    <GradientStop Offset="1" Color="#00FFFFFF" />
+                  </LinearGradientBrush>
+                </Border.Background>
+              </Border>
+            </Panel>
+            <StackPanel Grid.Column="1" Spacing="1" Margin="12,10,8,10">
+              <TextBlock FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource TargetLabelBrush}" Text="{Binding BestHeader}" TextTrimming="CharacterEllipsis" />
+              <TextBlock FontWeight="Bold" FontSize="15" Foreground="{Binding BestBrush}" Text="{Binding BestLamp}" />
+              <TextBlock Classes="secondary mono" FontSize="12" Text="{Binding BestDetail}" TextTrimming="CharacterEllipsis" />
+            </StackPanel>
+            <!-- BMS rank and the nearer rank line -->
+            <StackPanel Grid.Column="2" Margin="0,8,14,8" VerticalAlignment="Center" HorizontalAlignment="Right">
+              <TextBlock FontSize="26" FontWeight="Black" Foreground="{Binding RankBrush}" Text="{Binding RankText}" TextAlignment="Right" LineHeight="28" />
+              <TextBlock Classes="mono secondary" FontSize="12" FontWeight="SemiBold" Text="{Binding RankDiff}" TextAlignment="Right" />
+            </StackPanel>
+          </Grid>
+        </Border>
+        <TextBlock Classes="muted" FontSize="13" Text="{Binding NoBestText}" IsVisible="{Binding !HasBest}" />
+
+        <!-- Lamps at other rates -->
+        <ItemsControl ItemsSource="{Binding OtherRates}" IsVisible="{Binding HasOtherRates}">
+          <ItemsControl.ItemsPanel>
+            <ItemsPanelTemplate>
+              <WrapPanel ItemSpacing="6" LineSpacing="6" />
+            </ItemsPanelTemplate>
+          </ItemsControl.ItemsPanel>
+          <ItemsControl.ItemTemplate>
+            <DataTemplate>
+              <Border Classes="chip" ToolTip.Tip="{Binding Tip}">
+                <StackPanel Orientation="Horizontal" Spacing="5">
+                  <Ellipse Width="7" Height="7" Fill="{Binding Brush}" VerticalAlignment="Center" />
+                  <TextBlock Text="{Binding Text}" FontSize="12" FontWeight="SemiBold" Foreground="{DynamicResource ChipTextBrush}" />
+                </StackPanel>
+              </Border>
+            </DataTemplate>
+          </ItemsControl.ItemTemplate>
+        </ItemsControl>
+
+        <TextBlock Classes="secondary mono" FontSize="11" Text="{Binding KeysText}" ToolTip.Tip="{Binding KeysDetails}" TextTrimming="CharacterEllipsis" />
+      </StackPanel>
+    </StackPanel>
+  </Grid>
+</Window>
