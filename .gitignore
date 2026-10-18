@@ -4,3 +4,10 @@ node_modules/
 app/**/bin/
 app/**/obj/
 app/publish/
+
+# Development only: kept in the local checkout, not on GitHub
+.claude/
+test/
+package.json
+tools/make_icon.py
+tools/simulate.mjs
