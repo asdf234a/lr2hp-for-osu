@@ -54,8 +54,13 @@ public sealed class AppController : IDisposable
             Server.Send(client, KeybindsMessage());
             Server.Send(client, $"{{\"focus\":{(Keys.Focused ? 1 : 0)}}}");
         };
-        Server.ClientsChanged += () => Changed?.Invoke();
+        Server.ClientsChanged += () =>
+        {
+            UpdatePolledKeys();
+            Changed?.Invoke();
+        };
         Server.MessageReceived += OnOverlayMessage;
+        UpdatePolledKeys();
 
         Tosu.Host = Settings.TosuHost;
         Tosu.ConnectionChanged += _ => Changed?.Invoke();
@@ -92,12 +97,29 @@ public sealed class AppController : IDisposable
                 client.Name = root.TryGetProperty("overlay", out var name) ? name.GetString() ?? "overlay" : "overlay";
                 Changed?.Invoke();
                 break;
+            case "keys":
+                client.Keys = root.TryGetProperty("vks", out var vks) && vks.ValueKind == JsonValueKind.Array
+                    ? vks.EnumerateArray().Where(v => v.TryGetInt32(out _)).Select(v => v.GetInt32()).ToArray()
+                    : null;
+                UpdatePolledKeys();
+                break;
             case "clear":
             case "result":
                 var checksum = root.TryGetProperty("checksum", out var c) ? c.GetString() : null;
                 Clears.AddFromOverlay(root, Tosu.LastPlay is { } play && play.Checksum == checksum ? (play.Rate, play.Mods) : null);
                 break;
         }
+    }
+
+    /// <summary>
+    /// Polls the union of the keys the connected overlays asked for. An overlay that never sent its
+    /// keys (an older version) gets every key, as before; with no overlay connected nothing is polled.
+    /// </summary>
+    private void UpdatePolledKeys()
+    {
+        var connected = Server.Clients;
+        if (connected.Any(c => c.Keys == null)) Keys.SetKeys(KeyPoller.AllKeys);
+        else Keys.SetKeys(connected.SelectMany(c => c.Keys!));
     }
 
     private string KeybindsMessage() => JsonSerializer.Serialize(new { type = "keybinds", lazer = Keybinds.Lazer, stable = Keybinds.Stable }, JsonFile.Options);

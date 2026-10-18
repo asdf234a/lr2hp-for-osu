@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Security.Cryptography;
 using System.Text;
+using System.Threading.Channels;
 
 namespace LR2HP.Core;
 
@@ -22,8 +23,18 @@ public sealed class OverlayServer : IDisposable
 
         internal TcpClient Tcp { get; }
         internal NetworkStream Stream { get; }
-        internal readonly object WriteLock = new();
+
+        /// <summary>
+        /// Frames waiting to be written by this client's own writer, so a client that stops
+        /// reading can't hold up the key poller or the other overlays. A full queue means the
+        /// client is stuck, and it is disconnected.
+        /// </summary>
+        internal readonly Channel<byte[]> Outbox = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(1024) { SingleReader = true });
+
         public string Name { get; set; } = "overlay";
+
+        /// <summary>The key codes this overlay's layouts use, or null if it never said (older overlays: poll every key).</summary>
+        public int[]? Keys { get; set; }
     }
 
     private readonly List<Client> clients = new();
@@ -41,6 +52,14 @@ public sealed class OverlayServer : IDisposable
         get
         {
             lock (clients) return clients.Count;
+        }
+    }
+
+    public Client[] Clients
+    {
+        get
+        {
+            lock (clients) return clients.ToArray();
         }
     }
 
@@ -98,6 +117,8 @@ public sealed class OverlayServer : IDisposable
             stream.Write(Encoding.ASCII.GetBytes($"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {accept}\r\n\r\n"));
 
             client = new Client(tcp);
+            var started = client;
+            _ = Task.Run(() => WriteLoop(started));
             lock (clients) clients.Add(client);
             ClientsChanged?.Invoke();
             Connected?.Invoke(client);
@@ -111,6 +132,7 @@ public sealed class OverlayServer : IDisposable
         {
             if (client != null)
             {
+                client.Outbox.Writer.TryComplete();
                 lock (clients) clients.Remove(client);
                 ClientsChanged?.Invoke();
             }
@@ -195,6 +217,20 @@ public sealed class OverlayServer : IDisposable
         }
     }
 
+    private static async Task WriteLoop(Client client)
+    {
+        try
+        {
+            await foreach (var frame in client.Outbox.Reader.ReadAllAsync())
+                await client.Stream.WriteAsync(frame);
+        }
+        catch
+        {
+            // the connection dropped; the reader thread cleans up
+            try { client.Tcp.Close(); } catch { /* already closed */ }
+        }
+    }
+
     private static void Send(Client client, byte[] payload, int opcode)
     {
         var header = new List<byte> { (byte)(0x80 | opcode) };
@@ -213,11 +249,12 @@ public sealed class OverlayServer : IDisposable
             header.Add(127);
             for (var i = 7; i >= 0; i--) header.Add((byte)((long)payload.Length >> (8 * i)));
         }
-        lock (client.WriteLock)
-        {
-            client.Stream.Write(header.ToArray());
-            client.Stream.Write(payload);
-        }
+        var frame = new byte[header.Count + payload.Length];
+        header.CopyTo(frame);
+        payload.CopyTo(frame, header.Count);
+        if (client.Outbox.Writer.TryWrite(frame)) return;
+        Log.Write($"{client.Name} stopped reading; disconnecting it");
+        try { client.Tcp.Close(); } catch { /* already closed */ }
     }
 
     public void Send(Client client, string text)

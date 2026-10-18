@@ -6,7 +6,9 @@ namespace LR2HP.Core;
 /// <summary>
 /// Polls the keyboard state every millisecond (GetAsyncKeyState, the way key overlays do it:
 /// no hooks, no injection, nothing read from osu!'s memory) and reports key changes
-/// while osu! is the foreground window.
+/// while osu! is the foreground window. Only the keys the overlays' layouts use are read
+/// (<see cref="SetKeys"/>), and only while osu! has focus; otherwise it just checks the
+/// focus ten times a second and lets the system timer go back to its normal resolution.
 /// </summary>
 public sealed partial class KeyPoller : IDisposable
 {
@@ -39,6 +41,20 @@ public sealed partial class KeyPoller : IDisposable
     public bool Focused { get; private set; }
 
     public long Now => clock.ElapsedMilliseconds;
+
+    /// <summary>Every key code worth polling: mouse buttons and the generic shift/ctrl/alt codes are left out (their left/right codes stay).</summary>
+    public static readonly int[] AllKeys = Enumerable.Range(0x08, 0xFE - 0x08 + 1).Where(vk => vk is not (0x10 or 0x11 or 0x12)).ToArray();
+
+    private volatile int[] keys = AllKeys;
+
+    /// <summary>The keys to poll. Codes outside <see cref="AllKeys"/> are ignored.</summary>
+    public void SetKeys(IEnumerable<int> vks)
+    {
+        var next = vks.Where(vk => Array.IndexOf(AllKeys, vk) >= 0).Distinct().Order().ToArray();
+        if (next.SequenceEqual(keys)) return;
+        keys = next;
+        Log.Write(next.Length == AllKeys.Length ? "polling all keys" : $"polling {next.Length} keys");
+    }
 
     public void Start()
     {
@@ -82,22 +98,27 @@ public sealed partial class KeyPoller : IDisposable
 
     private void Loop()
     {
-        timeBeginPeriod(1);
+        var fineTimer = false;
         try
         {
-            // Mouse buttons and the generic shift/ctrl/alt codes are skipped; their left/right codes are polled
-            var vks = Enumerable.Range(0x08, 0xFE - 0x08 + 1).Where(vk => vk is not (0x10 or 0x11 or 0x12)).ToArray();
             var down = new bool[256];
             // Keys whose press went out to the overlays. Only these get a release, so keys typed
             // while another window has focus never leave this process, not even as releases.
             var sent = new bool[256];
+            var held = new List<int>(); // the keys marked in `sent`
             long nextFocusCheck = 0;
             while (running)
             {
+                var vks = keys;
                 var now = clock.ElapsedMilliseconds;
                 if (now >= nextFocusCheck)
                 {
                     var f = IsTargetFocused();
+                    if (f && !Focused)
+                    {
+                        // Keys already held when osu! comes to the front are not new presses
+                        foreach (var vk in vks) down[vk] = (GetAsyncKeyState(vk) & 0x8000) != 0;
+                    }
                     if (f != Focused)
                     {
                         Focused = f;
@@ -105,31 +126,53 @@ public sealed partial class KeyPoller : IDisposable
                     }
                     nextFocusCheck = now + 100;
                 }
-                foreach (var vk in vks)
+
+                // Poll only while osu! has focus, or until keys pressed in it are let go
+                var active = (Focused && vks.Length > 0) || held.Count > 0;
+                if (active != fineTimer)
                 {
-                    var d = (GetAsyncKeyState(vk) & 0x8000) != 0;
-                    if (d == down[vk]) continue;
-                    down[vk] = d;
-                    if (d)
-                    {
-                        if (!Focused || !StillTargetFocused()) continue;
-                        sent[vk] = true;
-                        KeyChanged?.Invoke(vk, true, clock.ElapsedMilliseconds);
-                    }
-                    else if (sent[vk])
-                    {
-                        // A key pressed in osu! and released after switching away still gets its
-                        // release, so the overlay never sees a stuck key
-                        sent[vk] = false;
-                        KeyChanged?.Invoke(vk, false, clock.ElapsedMilliseconds);
-                    }
+                    if (active) timeBeginPeriod(1);
+                    else timeEndPeriod(1);
+                    fineTimer = active;
                 }
+                if (!active)
+                {
+                    Thread.Sleep(10);
+                    continue;
+                }
+
+                foreach (var vk in vks) Poll(vk);
+                // A key dropped from the list while held still needs its release
+                for (var i = held.Count - 1; i >= 0; i--)
+                    if (Array.IndexOf(vks, held[i]) < 0) Poll(held[i]);
                 Thread.Sleep(1);
+            }
+
+            void Poll(int vk)
+            {
+                var d = (GetAsyncKeyState(vk) & 0x8000) != 0;
+                if (d == down[vk]) return;
+                down[vk] = d;
+                if (d)
+                {
+                    if (!Focused || !StillTargetFocused()) return;
+                    sent[vk] = true;
+                    held.Add(vk);
+                    KeyChanged?.Invoke(vk, true, clock.ElapsedMilliseconds);
+                }
+                else if (sent[vk])
+                {
+                    // A key pressed in osu! and released after switching away still gets its
+                    // release, so the overlay never sees a stuck key
+                    sent[vk] = false;
+                    held.Remove(vk);
+                    KeyChanged?.Invoke(vk, false, clock.ElapsedMilliseconds);
+                }
             }
         }
         finally
         {
-            timeEndPeriod(1);
+            if (fineTimer) timeEndPeriod(1);
         }
     }
 

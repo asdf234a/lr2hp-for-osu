@@ -37,11 +37,11 @@ export function parseOsuMania(text) {
     return { keys, notes };
 }
 
-// Number of judgements the chart produces. Stable judges a hold note once,
-// lazer judges head and tail separately.
-export function judgementCount(chart, lazer) {
+// Number of judgements the chart produces. Stable (ScoreV1) judges a hold note once;
+// lazer and stable with ScoreV2 judge its head and tail separately.
+export function judgementCount(chart, splitHolds) {
     const holds = chart.notes.filter((n) => n.hold).length;
-    return chart.notes.length + (lazer ? holds : 0);
+    return chart.notes.length + (splitHolds ? holds : 0);
 }
 
 // osu!lazer mania hit windows (ms, half-width) for an OD, like ManiaHitWindows:
@@ -55,16 +55,36 @@ const WINDOW_RANGES = {
     miss: [188, 173, 158],
 };
 
-export function maniaWindows(od, mods = new Set()) {
+// osu!stable mania hit windows: MAX is a fixed 16 ms, the rest shrink by 3 ms per OD.
+const STABLE_WINDOWS = { perfect: [16, 0], great: [64, 3], good: [97, 3], ok: [127, 3], meh: [151, 3], miss: [188, 3] };
+
+// stable: use osu!stable's windows instead of lazer's. HR / EZ scale either by 1.4.
+export function maniaWindows(od, mods = new Set(), { stable = false } = {}) {
     let scale = 1;
     if (mods.has('HR')) scale /= 1.4;
     if (mods.has('EZ')) scale *= 1.4;
     const w = {};
+    if (stable) {
+        for (const [name, [base, perOd]] of Object.entries(STABLE_WINDOWS)) w[name] = (base - perOd * od) * scale;
+        return w;
+    }
     for (const [name, [min, mid, max]] of Object.entries(WINDOW_RANGES)) {
         const v = od > 5 ? mid + (max - mid) * (od - 5) / 5 : od < 5 ? mid - (mid - min) * (5 - od) / 5 : mid;
         w[name] = v * scale;
     }
     return w;
+}
+
+// The OD a play is judged with: lazer's Difficulty Adjust can override the map's own.
+export function playOd(data) {
+    const mods = data?.play?.mods?.array;
+    if (Array.isArray(mods)) {
+        const da = mods.find((m) => m?.acronym === 'DA');
+        const od = Number(da?.settings?.overall_difficulty);
+        if (Number.isFinite(od)) return od;
+    }
+    const od = Number(data?.beatmap?.stats?.od?.original);
+    return Number.isFinite(od) ? od : 5;
 }
 
 // Key names accepted in the key layout settings, mapped to Windows virtual-key codes.

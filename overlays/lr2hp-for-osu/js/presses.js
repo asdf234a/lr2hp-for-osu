@@ -15,11 +15,17 @@
 // A press left without an entry is either an early MISS (pressed inside the miss
 // window but before the 50 window, which still uses up the note) or an empty
 // POOR; the calibrated clock decides between the two.
+//
+// Hold notes are also judged when the key is let go, and that judgement can show up
+// in hitErrors too (offset from the hold's end). Such an entry belongs to no press,
+// so when a release lands on a hold's end the entry that fits it is set aside
+// instead of being paired with some other press.
 
 const CONFIRM_WAIT = 60; // ms a press waits for its hitErrors entry
 const ENTRY_EARLY = 30; // an entry may arrive this long before its press (helper lag)
 const CALIB_SAMPLES = 15;
 const DROP = 200; // cost of leaving an entry unpaired (fits only reach +-200 ms)
+const RELEASE_REACH = 250; // a release this close to a hold's end may be judged as its tail
 
 // Min-cost assignment (Hungarian method) for an n x m cost matrix, n <= m.
 // Returns the column picked for each row.
@@ -100,12 +106,13 @@ export class PressClassifier {
         this.first = chart.notes.length ? chart.notes[0].time : 0;
         this.last = chart.notes.reduce((m, n) => Math.max(m, n.end), 0);
 
+        this.releases = []; // recent releases on hold ends: { wall, end }
         this.pending = []; // presses not settled yet, oldest first
         this.entries = []; // hitErrors entries not settled yet
         this.pairs = new Map(); // tentative: press -> { entry, note }
         this.residuals = [];
         this.calibration = 0;
-        this.stats = { hit: 0, earlyMiss: 0, empty: 0, ignored: 0 };
+        this.stats = { hit: 0, earlyMiss: 0, empty: 0, ignored: 0, tail: 0 };
         this.log = []; // recent decisions, for the debug view
     }
 
@@ -164,10 +171,51 @@ export class PressClassifier {
         if (this.entries.length) this.repair();
     }
 
+    // A key let go. Remembered when it lands near the end of a hold in that lane,
+    // so the hold's release judgement isn't taken for a press.
+    release(inputColumn, wall) {
+        if (inputColumn < 0 || inputColumn >= this.keys) return;
+        const t = this.time(wall);
+        let end = null;
+        for (const c of this.anyColumn ? [...this.columns.keys()] : [this.lane(inputColumn)]) {
+            for (const n of this.columns[c]) {
+                if (n.end <= n.time || Math.abs(n.end - t) > RELEASE_REACH) continue;
+                if (end === null || Math.abs(n.end - t) < Math.abs(end - t)) end = n.end;
+            }
+        }
+        if (end === null) return;
+        const r = { wall, end };
+        // The entry may already be here when the release message arrives a moment late
+        const i = this.entries.findIndex((e) => this.isTail(e, r) && ![...this.pairs.values()].some((q) => q.entry === e && q.note));
+        if (i >= 0) {
+            this.entries.splice(i, 1);
+            this.stats.tail++;
+            this.repair();
+            return;
+        }
+        this.releases.push(r);
+        if (this.releases.length > 32) this.releases.shift();
+    }
+
+    isTail(e, r) {
+        const dt = e.wall - r.wall;
+        if (dt > CONFIRM_WAIT || dt < -ENTRY_EARLY) return false;
+        return Math.abs(this.time(r.wall) - e.offset - r.end) <= (this.calibrated ? 60 : 150);
+    }
+
     // New hitErrors entries (offset = press time - note time, in ms)
     hitErrors(offsets, wall) {
         if (!offsets.length) return;
-        for (const offset of offsets) this.entries.push({ offset, wall });
+        for (const offset of offsets) {
+            const e = { offset, wall };
+            const r = this.releases.findIndex((x) => this.isTail(e, x));
+            if (r >= 0) {
+                this.releases.splice(r, 1);
+                this.stats.tail++;
+                continue;
+            }
+            this.entries.push(e);
+        }
         this.repair();
     }
 
@@ -253,6 +301,7 @@ export class PressClassifier {
             }
             changed = true;
         }
+        this.releases = this.releases.filter((r) => wall - r.wall <= CONFIRM_WAIT + ENTRY_EARLY);
         // Entries nobody claimed in time came from presses we never saw
         const paired = new Set([...this.pairs.values()].map((q) => q.entry));
         const before = this.entries.length;

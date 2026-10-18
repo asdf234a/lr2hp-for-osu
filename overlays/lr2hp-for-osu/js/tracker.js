@@ -1,7 +1,7 @@
 // Follows a play through tosu: judgements, the chart, key presses and empty POOR.
 // Shared by the gauge overlay and the dashboard overlay.
 
-import { parseOsuMania, judgementCount, parseLayout, maniaWindows, vkName } from './notes.js';
+import { parseOsuMania, judgementCount, parseLayout, maniaWindows, playOd, vkName } from './notes.js';
 import { PressClassifier } from './presses.js';
 import { PlaySession } from './session.js';
 import { SongClock } from './clock.js';
@@ -143,6 +143,7 @@ export class PlayTracker {
         if (this.session) this.session.setRange(gaugeKey(s.startGauge, 'exhard'), gaugeKey(s.bottomGauge, 'easy'));
         if (this.chart) this.updateLayout();
         this.connectHelper();
+        this.sendWantedKeys();
     }
 
     newSession(notes) {
@@ -208,8 +209,9 @@ export class PlayTracker {
         this.unmapped = new Map(); // helper keys pressed that aren't in the layout: vk -> count
         const current = this.session;
         const mods = modsOf(data);
-        const od = Number(data?.beatmap?.stats?.od?.original);
-        this.windows = maniaWindows(Number.isFinite(od) ? od : 5, mods);
+        this.windows = maniaWindows(playOd(data), mods, { stable: !this.isLazer });
+        // lazer and stable ScoreV2 judge a hold's head and tail separately
+        const splitHolds = this.isLazer || mods.has('V2') || mods.has('SV2');
 
         if (data.beatmap?.isConvert) {
             this.chart = null;
@@ -220,7 +222,7 @@ export class PlayTracker {
         }
         this.fetchChart(data.beatmap?.checksum || '').then((c) => {
             if (this.session !== current || !c) return;
-            this.session.setNotes(judgementCount(c, this.isLazer));
+            this.session.setNotes(judgementCount(c, splitHolds));
             this.updateLayout();
             this.classifier = new PressClassifier(c, {
                 early: this.windows.miss,
@@ -243,6 +245,26 @@ export class PlayTracker {
         this.layout = parseLayout(synced || this.settings[`keys${keys}`]);
     }
 
+    // Every key any layout could use (osu!lazer and osu!stable for each key count, and
+    // the typed-in ones). The app polls only these, so other typing never reaches it.
+    wantedKeys() {
+        const vks = new Set();
+        for (const client of ['lazer', 'stable']) {
+            for (const text of Object.values(this.synced?.[client] || {})) for (const vk of parseLayout(text).keys()) vks.add(vk);
+        }
+        for (let k = 1; k <= 10; k++) for (const vk of parseLayout(this.settings[`keys${k}`]).keys()) vks.add(vk);
+        return [...vks].sort((a, b) => a - b);
+    }
+
+    sendWantedKeys() {
+        if (!this.helperConnected || !this.helper) return;
+        const vks = this.wantedKeys();
+        const key = vks.join(',');
+        if (key === this.sentKeys) return;
+        this.sentKeys = key;
+        this.helper.send(JSON.stringify({ type: 'keys', vks }));
+    }
+
     onPress(column, wall) {
         if (this.debug) {
             this.debugPresses.push({ column, wall: Math.round(wall), ok: !!(this.session && this.classifier && this.clock.valid) });
@@ -250,6 +272,11 @@ export class PlayTracker {
         }
         if (!this.session || !this.classifier || this.inResults || !this.settings.emptyPoor || !this.clock.valid) return;
         this.classifier.press(column, wall);
+    }
+
+    onRelease(column, wall) {
+        if (!this.session || !this.classifier || this.inResults || !this.settings.emptyPoor || !this.clock.valid) return;
+        this.classifier.release(column, wall);
     }
 
     // Presses that got no hitErrors entry are settled a moment later
@@ -381,6 +408,8 @@ export class PlayTracker {
                 ws.send(JSON.stringify({ type: 'hello', overlay: this.name }));
                 this.helperConnected = true;
                 this.helperOffset = null;
+                this.sentKeys = null;
+                this.sendWantedKeys();
             },
             onClose: () => {
                 this.helperConnected = false;
@@ -389,10 +418,12 @@ export class PlayTracker {
                 if (msg.type === 'keybinds') {
                     this.synced = { lazer: msg.lazer || {}, stable: msg.stable || {} };
                     this.updateLayout();
+                    this.sendWantedKeys();
                     return;
                 }
-                if (msg.d !== 1 || !this.chart) return;
+                if ((msg.d !== 1 && msg.d !== 0) || !this.chart) return;
                 const column = this.layout.get(msg.vk);
+                if (column === undefined && msg.d === 0) return;
                 if (column === undefined) {
                     if (this.session && !this.inResults && this.unmapped) {
                         this.unmapped.set(msg.vk, (this.unmapped.get(msg.vk) || 0) + 1);
@@ -408,7 +439,8 @@ export class PlayTracker {
                     if (this.helperOffset === null || now - t < this.helperOffset) this.helperOffset = now - t;
                     wall = t + this.helperOffset;
                 }
-                this.onPress(column, wall);
+                if (msg.d === 0) this.onRelease(column, wall);
+                else this.onPress(column, wall);
             },
         });
     }
