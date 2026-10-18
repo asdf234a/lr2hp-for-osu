@@ -22,7 +22,7 @@ def take(flag):
 only = take('--only')
 rename = take('--as')
 src = args[0]
-dst = args[1] if len(args) > 1 else os.path.join(os.path.dirname(__file__), '..', 'lr2hp-for-osu-emptypoor', 'skins', 'judge')
+dst = args[1] if len(args) > 1 else os.path.join(os.path.dirname(__file__), '..', 'overlays', 'lr2hp-for-osu-emptypoor', 'skins', 'judge')
 
 DEFAULTS = {
     'JUDGEF_WIDTH': 180, 'JUDGEF_HEIGHT': 50, 'DIVY_F_PR': 1,
