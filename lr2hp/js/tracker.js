@@ -84,11 +84,11 @@ function rateOf(data) {
 }
 
 export class PlayTracker {
-    // name: tells the LR2 HP app which overlay this is; reportClears: send clears to it
+    // name: tells the LR2HP for osu app which overlay this is; reportClears: send clears to it
     constructor({ host, settings, debug = false, name = 'overlay', reportClears = false }) {
         this.name = name;
         this.reportClears = reportClears;
-        this.synced = null; // key layouts from the LR2 HP app: { lazer: { [keys]: layout }, stable: { ... } }
+        this.synced = null; // key layouts from the LR2HP for osu app: { lazer: { [keys]: layout }, stable: { ... } }
         this.client = 'lazer';
         this.host = host;
         this.settings = settings;
@@ -329,7 +329,7 @@ export class PlayTracker {
         }
     }
 
-    // A cleared play goes to the LR2 HP app, which keeps the best lamp per map and rate
+    // A cleared play goes to the LR2HP for osu app, which keeps the best lamp per map and rate
     sendClear(data) {
         if (!this.reportClears || this.clearSent || !this.helperConnected || !this.helper) return;
         const s = this.session;

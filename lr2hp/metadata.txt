@@ -1,5 +1,5 @@
 Usecase: obs-overlay, ingame
-Name: LR2 HP
+Name: LR2HP for osu
 Version: 0.1.0
 Author: asdf234a
 CompatibleWith: tosu

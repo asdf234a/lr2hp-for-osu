@@ -1,4 +1,5 @@
-# lr2hp-tosuoverlay
+# LR2HP for osu
+<img src="app/LR2HP/Assets/icon.png" width="96" alt="LR2HP for osu icon">
 
 osu!lazer 매니아용 LR2 HP 게이지 [tosu](https://github.com/tosuapp/tosu) 오버레이입니다.
 판정은 osu!에서 받아 LR2 게이지 규칙으로 다시 계산하고, 노트에 맞지 않은 키 입력은 공POOR로 처리합니다.
@@ -18,13 +19,13 @@ osu!lazer 매니아용 LR2 HP 게이지 [tosu](https://github.com/tosuapp/tosu) 
    python tools/import_judges.py "<beatoraja>/skin/<simple-play>/customize/judge" "<tosu>/static/lr2hp-emptypoor/skins/judge"
    ```
 3. `LR2HP.exe`를 원하는 폴더(예: `tosu/LR2HP/`)에 두고 실행합니다. .NET 10 런타임이 필요합니다.
-4. tosu 대시보드(`http://127.0.0.1:24050`)에서 **LR2 HP**, **LR2 HP Dashboard**, **LR2 HP Empty POOR**를 찾아 설정합니다.
+4. tosu 대시보드(`http://127.0.0.1:24050`)에서 **LR2HP for osu**, **LR2HP for osu Dashboard**, **LR2HP for osu Empty POOR**를 찾아 설정합니다.
 5. OBS 브라우저 소스 URL
    - 게이지: `http://127.0.0.1:24050/lr2hp/` (기본 크기 720x64. 폭은 게이지 길이 + 120px이며, 길이는 설정의 `Gauge length`로 바꿀 수 있습니다)
    - 대시보드: `http://127.0.0.1:24050/lr2hp-dashboard/` (230x260)
    - 공POOR 표시: `http://127.0.0.1:24050/lr2hp-emptypoor/` (Iridium 기준 76x32, 판정 이미지마다 다릅니다)
 
-대시보드와 공POOR 표시 오버레이는 게이지 오버레이의 코드를 함께 쓰고, 키 배치와 공POOR 설정도 게이지 오버레이(**LR2 HP**) 쪽 설정을 그대로 읽습니다. 그래서 두 폴더를 나란히 설치해야 합니다.
+대시보드와 공POOR 표시 오버레이는 게이지 오버레이의 코드를 함께 쓰고, 키 배치와 공POOR 설정도 게이지 오버레이(**LR2HP for osu**) 쪽 설정을 그대로 읽습니다. 그래서 두 폴더를 나란히 설치해야 합니다.
 
 osu! 자체 HP로 실패하면 플레이가 끝나므로 **NF(No Fail)** 를 켜고 플레이하는 것을 권장합니다.
 

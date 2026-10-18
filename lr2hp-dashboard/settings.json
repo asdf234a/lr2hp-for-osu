@@ -13,5 +13,5 @@
     { "uniqueID": "hideOutsidePlay", "type": "checkbox", "title": "Hide outside play", "description": "", "options": "", "value": true },
 
     { "uniqueID": "hlink", "type": "header", "title": "Link", "description": "", "options": "", "value": "" },
-    { "uniqueID": "gaugeOverlay", "type": "text", "title": "LR2 HP overlay folder", "description": "Folder name of the LR2 HP overlay in tosu/static. Key layout and empty POOR settings are taken from it.", "options": "", "value": "lr2hp" }
+    { "uniqueID": "gaugeOverlay", "type": "text", "title": "LR2HP for osu overlay folder", "description": "Folder name of the LR2HP for osu overlay in tosu/static. Key layout and empty POOR settings are taken from it.", "options": "", "value": "lr2hp" }
 ]

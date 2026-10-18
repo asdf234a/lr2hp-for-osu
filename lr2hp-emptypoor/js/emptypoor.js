@@ -1,6 +1,6 @@
 // Flashes the skin's POOR judge image whenever an empty POOR is counted,
 // timed like beatoraja's judge display (shown for 500 ms from the judge timer).
-// Play tracking is shared with the LR2 HP gauge overlay (../lr2hp).
+// Play tracking is shared with the LR2HP for osu gauge overlay (../lr2hp).
 
 import { PlayTracker, GAMEPLAY_DEFAULTS, settingsFromUrl, watchSettings } from '../../lr2hp/js/tracker.js';
 

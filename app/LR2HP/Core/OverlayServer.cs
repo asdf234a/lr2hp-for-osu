@@ -80,7 +80,7 @@ public sealed class OverlayServer : IDisposable
             var key = request.Split("\r\n").Select(l => l.Split(':', 2)).FirstOrDefault(p => p.Length == 2 && p[0].Trim().Equals("Sec-WebSocket-Key", StringComparison.OrdinalIgnoreCase))?[1].Trim();
             if (key == null)
             {
-                var body = Encoding.ASCII.GetBytes("LR2 HP is running.");
+                var body = Encoding.ASCII.GetBytes("LR2HP for osu is running.");
                 var head = Encoding.ASCII.GetBytes($"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\nContent-Length: {body.Length}\r\nConnection: close\r\n\r\n");
                 stream.Write(head);
                 stream.Write(body);

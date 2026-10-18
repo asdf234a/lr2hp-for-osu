@@ -9,12 +9,20 @@
     <AssemblyName>LR2HP</AssemblyName>
     <RootNamespace>LR2HP</RootNamespace>
     <Version>0.1.0</Version>
+    <Product>LR2HP for osu</Product>
+    <AssemblyTitle>LR2HP for osu</AssemblyTitle>
     <DebugType>none</DebugType>
     <SelfContained>false</SelfContained>
     <PublishSingleFile>true</PublishSingleFile>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <ApplicationIcon>Assets\LR2HP.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <!-- The window's own icon (title bar / taskbar), not just the exe's. Drawn by tools/make_icon.py -->
+    <AvaloniaResource Include="Assets\LR2HP.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Avalonia" Version="12.0.3" />

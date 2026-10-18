@@ -3,5 +3,5 @@
     { "uniqueID": "trim", "type": "checkbox", "title": "Trim empty space", "description": "Crop the image to the visible text so the overlay box hugs it.", "options": "", "value": true },
     { "uniqueID": "duration", "type": "number", "title": "Show time (ms)", "description": "beatoraja shows a judge for 500 ms.", "options": "", "value": 500 },
     { "uniqueID": "scale", "type": "number", "title": "Scale", "description": "", "options": "", "value": 1 },
-    { "uniqueID": "gaugeOverlay", "type": "text", "title": "LR2 HP overlay folder", "description": "Folder name of the LR2 HP overlay in tosu/static. Key layout and empty POOR settings are taken from it.", "options": "", "value": "lr2hp" }
+    { "uniqueID": "gaugeOverlay", "type": "text", "title": "LR2HP for osu overlay folder", "description": "Folder name of the LR2HP for osu overlay in tosu/static. Key layout and empty POOR settings are taken from it.", "options": "", "value": "lr2hp" }
 ]

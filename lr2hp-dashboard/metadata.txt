@@ -1,8 +1,8 @@
 Usecase: obs-overlay, ingame
-Name: LR2 HP Dashboard
+Name: LR2HP for osu Dashboard
 Version: 0.1.0
 Author: asdf234a
 CompatibleWith: tosu
 Resolution: 230x260
 authorLinks: https://github.com/asdf234a/lr2hp-tosuoverlay
-Notes: BMS-style score dashboard for osu!lazer mania: rank, EX score, score rate, judge counts with FAST/SLOW and max combo, using beatoraja simple-play counter images. Needs the LR2 HP overlay (lr2hp folder) installed next to it; key layout and empty POOR settings are read from that overlay.
+Notes: BMS-style score dashboard for osu!lazer mania: rank, EX score, score rate, judge counts with FAST/SLOW and max combo, using beatoraja simple-play counter images. Needs the LR2HP for osu overlay (lr2hp folder) installed next to it; key layout and empty POOR settings are read from that overlay.

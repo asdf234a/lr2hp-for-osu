@@ -1,6 +1,6 @@
 // BMS-style score dashboard: rank, EX score, score rate, judge counts with
 // FAST/SLOW and max combo, drawn with the beatoraja simple-play counter images.
-// Play tracking is shared with the LR2 HP gauge overlay (../lr2hp).
+// Play tracking is shared with the LR2HP for osu gauge overlay (../lr2hp).
 
 import { PlayTracker, GAMEPLAY_DEFAULTS, settingsFromUrl, watchSettings } from '../../lr2hp/js/tracker.js';
 import { rankIndex } from '../../lr2hp/js/session.js';
