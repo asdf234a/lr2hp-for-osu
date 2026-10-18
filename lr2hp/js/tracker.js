@@ -3,6 +3,7 @@
 
 import { parseOsuMania, judgementCount, parseLayout, maniaWindows, vkName } from './notes.js';
 import { PressClassifier } from './presses.js';
+import { KeyLearner, learnedLayout, mergeLayouts } from './keylearn.js';
 import { PlaySession } from './session.js';
 import { SongClock } from './clock.js';
 import { connect } from './socket.js';
@@ -16,6 +17,7 @@ export const GAMEPLAY_DEFAULTS = {
     emptyPoor: true,
     emptyPoorMode: 'lr2oraja',
     earlyMissAsBad: true,
+    learnKeys: true,
     keyHelperPort: 24055,
     inputOffset: 0,
     keys1: 'Space',
@@ -34,6 +36,26 @@ const GAUGE_KEY = { 'EX-HARD': 'exhard', HARD: 'hard', GROOVE: 'groove', EASY: '
 
 export function gaugeKey(name, fallback) {
     return GAUGE_KEY[String(name).toUpperCase()] || fallback;
+}
+
+const VOTES_KEY = 'lr2hp.keyvotes';
+
+// Learned key votes live in the browser profile, shared by every overlay on this origin
+function loadVotes() {
+    try {
+        const v = JSON.parse(localStorage.getItem(VOTES_KEY) || '{}');
+        return v && typeof v === 'object' ? v : {};
+    } catch {
+        return {};
+    }
+}
+
+function saveVotes(votes) {
+    try {
+        localStorage.setItem(VOTES_KEY, JSON.stringify(votes));
+    } catch {
+        // storage unavailable: learning still works for this session
+    }
 }
 
 const STATE_PLAY = 2;
@@ -109,6 +131,10 @@ export class PlayTracker {
         this.helperPort = null;
         this.debugPresses = [];
         this.listeners = { emptyPoor: [] };
+        this.votes = loadVotes(); // { [keyCount]: { [vk]: votes per lane } }
+        this.learner = null;
+        this.learnedKeys = 0;
+        this.votesSavedAt = 0;
     }
 
     // Events: 'emptyPoor' (fast) fires the moment an empty POOR is counted
@@ -135,7 +161,7 @@ export class PlayTracker {
     applySettings() {
         const s = this.settings;
         if (this.session) this.session.setRange(gaugeKey(s.startGauge, 'exhard'), gaugeKey(s.bottomGauge, 'easy'));
-        if (this.chart) this.layout = parseLayout(s[`keys${this.chart.keys}`]);
+        if (this.chart) this.updateLayout();
         this.connectHelper();
     }
 
@@ -195,6 +221,7 @@ export class PlayTracker {
         this.clock.reset();
         this.tosuKeyCounts = null;
         this.unmapped = new Map(); // helper keys pressed that aren't in the layout: vk -> count
+        this.learner = null;
         const current = this.session;
         const mods = modsOf(data);
         const od = Number(data?.beatmap?.stats?.od?.original);
@@ -210,7 +237,15 @@ export class PlayTracker {
         this.fetchChart(data.beatmap?.checksum || '').then((c) => {
             if (this.session !== current || !c) return;
             this.session.setNotes(judgementCount(c, this.isLazer));
-            this.layout = parseLayout(this.settings[`keys${c.keys}`]);
+            const shuffled = mods.has('RD') || mods.has('DS') || mods.has('CO');
+            if (this.settings.learnKeys && !shuffled) {
+                this.learner = new KeyLearner(c, {
+                    songTime: (wall) => this.clock.now(wall),
+                    votes: this.votes[c.keys] || (this.votes[c.keys] = {}),
+                    mirror: mods.has('MR'),
+                });
+            }
+            this.updateLayout();
             this.classifier = new PressClassifier(c, {
                 early: this.windows.miss,
                 late: this.windows.meh,
@@ -232,8 +267,25 @@ export class PlayTracker {
         this.classifier.press(column, wall);
     }
 
+    // Typed-in layout for this key count, overridden by whatever the learner is sure of
+    updateLayout() {
+        const keys = this.chart?.keys;
+        if (!keys) return;
+        const manual = parseLayout(this.settings[`keys${keys}`]);
+        const learned = this.settings.learnKeys ? learnedLayout(this.votes[keys], keys) : new Map();
+        this.learnedKeys = learned.size;
+        this.layout = mergeLayouts(learned, manual);
+    }
+
     // Presses that got no hitErrors entry are settled a moment later
     settlePresses(now) {
+        if (this.learner && this.learner.flush(now)) {
+            this.updateLayout();
+            if (now - this.votesSavedAt > 2000) {
+                this.votesSavedAt = now;
+                saveVotes(this.votes);
+            }
+        }
         if (!this.session || !this.classifier) return;
         for (const r of this.classifier.tick(now)) {
             if (r.result === 'empty') {
@@ -307,6 +359,7 @@ export class PlayTracker {
             const added = errors.slice(this.hitErrorCount);
             this.hitErrorCount = errors.length;
             if (this.classifier) this.classifier.hitErrors(added, now);
+            if (this.learner && this.helperConnected && !this.inResults) this.learner.hitErrors(added, now);
             if (this.session && this.windows && !this.inResults) this.session.addHitOffsets(added, this.windows);
         }
     }
@@ -335,13 +388,6 @@ export class PlayTracker {
             },
             onMessage: (msg) => {
                 if (msg.d !== 1 || !this.chart) return;
-                const column = this.layout.get(msg.vk);
-                if (column === undefined) {
-                    if (this.session && !this.inResults && this.unmapped) {
-                        this.unmapped.set(msg.vk, (this.unmapped.get(msg.vk) || 0) + 1);
-                    }
-                    return;
-                }
                 // Map the helper's own timestamp onto performance.now(); the smallest
                 // receive delay seen is the closest to the true offset
                 const now = performance.now();
@@ -350,6 +396,13 @@ export class PlayTracker {
                 if (Number.isFinite(t)) {
                     if (this.helperOffset === null || now - t < this.helperOffset) this.helperOffset = now - t;
                     wall = t + this.helperOffset;
+                }
+                const playing = this.session && !this.inResults;
+                if (playing && this.learner) this.learner.press(msg.vk, wall);
+                const column = this.layout.get(msg.vk);
+                if (column === undefined) {
+                    if (playing && this.unmapped) this.unmapped.set(msg.vk, (this.unmapped.get(msg.vk) || 0) + 1);
+                    return;
                 }
                 this.onPress(column, wall);
             },
@@ -365,6 +418,13 @@ export class PlayTracker {
             const s = this.classifier.stats;
             const c = this.classifier.calibration;
             let text = `hit ${s.hit} · early ${s.earlyMiss} · 空POOR ${s.empty} · sync ${c >= 0 ? '+' : ''}${c.toFixed(1)}ms`;
+            if (this.helperConnected && this.settings.learnKeys && this.chart) {
+                const lanes = [...Array(this.chart.keys)].map((_, lane) => {
+                    const vk = [...this.layout].find(([, l]) => l === lane)?.[0];
+                    return vk === undefined ? '?' : vkName(vk);
+                });
+                text += ` · keys ${this.learnedKeys}/${this.chart.keys} learned [${lanes.join(' ')}]`;
+            }
             // Keys pressed during play that the layout doesn't know: a likely layout mismatch
             const unmapped = [...(this.unmapped || new Map())].filter(([, n]) => n >= 3);
             if (unmapped.length) text += ` · unmapped ${unmapped.map(([vk, n]) => `${vkName(vk)}×${n}`).join(' ')}`;
