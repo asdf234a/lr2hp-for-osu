@@ -90,18 +90,19 @@ export class PressClassifier {
         }
     }
 
-    // Returns the empty POOR presses that timed out without a hitErrors entry
+    // Settles presses that timed out without a hitErrors entry.
+    // Returns [{ result: 'empty' | 'earlyMiss' | 'ignored', fast }]
     tick(wall) {
         this.orphans = this.orphans.filter((o) => wall - o.wall <= ORPHAN_KEEP);
         const results = [];
         while (this.pending.length && wall - this.pending[0].wall > CONFIRM_WAIT) {
             const p = this.pending.shift();
             const r = this.resolveUnconfirmed(p);
-            this.stats[r]++;
-            this.record(p, r);
-            if (r === 'empty') results.push(p);
+            this.stats[r.result]++;
+            this.record(p, r.result);
+            results.push(r);
         }
-        return results.length;
+        return results;
     }
 
     confirm(p, offset) {
@@ -133,20 +134,30 @@ export class PressClassifier {
     resolveUnconfirmed(p) {
         const t = this.time(p.wall);
         const cols = this.anyColumn ? [...this.columns.keys()] : [p.column];
-        let nearest = Infinity;
+        let nearest = Infinity; // ms until the next note
+        let since = Infinity; // ms since the previous note
         for (const c of cols) {
             const i = this.skipExpired(c, t);
-            const note = this.columns[c][i];
+            const list = this.columns[c];
+            for (let j = i - 1; j >= 0; j--) {
+                if (list[j].time <= t) {
+                    since = Math.min(since, t - list[j].time);
+                    break;
+                }
+            }
+            const note = list[i];
             if (!note) continue;
             nearest = Math.min(nearest, note.time - t);
             // Inside the miss window: osu! scored an early MISS on this note
             if (note.time - this.early <= t) {
                 this.next[c] = i + 1;
-                return 'earlyMiss';
+                return { result: 'earlyMiss', fast: true };
             }
         }
-        if (this.mode === 'near') return nearest <= this.nearWindow ? 'empty' : 'ignored';
-        if (t < this.first - this.early || t > this.last + this.late) return 'ignored';
-        return 'empty';
+        // FAST when the stray press is closer to the coming note than to the last one
+        const fast = nearest < since;
+        if (this.mode === 'near') return { result: nearest <= this.nearWindow ? 'empty' : 'ignored', fast };
+        if (t < this.first - this.early || t > this.last + this.late) return { result: 'ignored', fast };
+        return { result: 'empty', fast };
     }
 }

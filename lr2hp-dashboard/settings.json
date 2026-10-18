@@ -1,0 +1,17 @@
+[
+    { "uniqueID": "hshow", "type": "header", "title": "Show", "description": "", "options": "", "value": "" },
+    { "uniqueID": "showRank", "type": "checkbox", "title": "Rank", "description": "BMS rank from the current score rate (AAA from 8/9, AA from 7/9 ...).", "options": "", "value": true },
+    { "uniqueID": "showScore", "type": "checkbox", "title": "EX score", "description": "PGREAT x2 + GREAT.", "options": "", "value": true },
+    { "uniqueID": "showRate", "type": "checkbox", "title": "Score rate", "description": "EX score over the notes judged so far.", "options": "", "value": true },
+    { "uniqueID": "judgeCount", "type": "options", "title": "Judge count", "description": "PG / GR / GD / BD / PR / KP (empty POOR) / CB (combo breaks).", "options": ["ON+FAST/SLOW", "ON", "OFF"], "value": "ON+FAST/SLOW" },
+    { "uniqueID": "showMaxCombo", "type": "checkbox", "title": "Max combo", "description": "BMS combo: BAD and POOR break it.", "options": "", "value": true },
+
+    { "uniqueID": "hlook", "type": "header", "title": "Look", "description": "", "options": "", "value": "" },
+    { "uniqueID": "counter", "type": "options", "title": "Counter image", "description": "beatoraja simple-play customize/counter.", "options": ["default", "default_old"], "value": "default" },
+    { "uniqueID": "rank", "type": "options", "title": "Rank image", "description": "beatoraja simple-play customize/rank.", "options": ["noto", "default", "default_s", "default2", "block", "neonew", "KCOOL"], "value": "noto" },
+    { "uniqueID": "scale", "type": "number", "title": "Scale", "description": "", "options": "", "value": 1 },
+    { "uniqueID": "hideOutsidePlay", "type": "checkbox", "title": "Hide outside play", "description": "", "options": "", "value": true },
+
+    { "uniqueID": "hlink", "type": "header", "title": "Link", "description": "", "options": "", "value": "" },
+    { "uniqueID": "gaugeOverlay", "type": "text", "title": "LR2 HP overlay folder", "description": "Folder name of the LR2 HP overlay in tosu/static. Key layout and empty POOR settings are taken from it.", "options": "", "value": "lr2hp" }
+]

@@ -5,13 +5,18 @@ osu!lazer 매니아용 LR2 HP 게이지 [tosu](https://github.com/tosuapp/tosu) 
 
 - EX-HARD / HARD / GROOVE / EASY 게이지를 동시에 계산하고 GAS(게이지 오토 시프트)로 표시합니다.
 - 게이지 그림은 beatoraja `simple-play` 스킨의 `customize/gauge`(simple2 / simple / default)를 그대로 씁니다.
+- **대시보드 오버레이**(`lr2hp-dashboard`): BMS 기준 랭크, EX 스코어, 스코어 레이트, 판정 카운트(FAST/SLOW 포함), MAX 콤보를 같은 스킨의 카운터·랭크 이미지로 보여줍니다.
 - 대상: osu!lazer, 1~7K. 스테이블은 지원 대상이 아닙니다.
 
 ## 설치
 
-1. `lr2hp` 폴더를 tosu의 `static` 폴더에 복사합니다. 예: `tosu/static/lr2hp`
-2. tosu 대시보드(`http://127.0.0.1:24050`)에서 **LR2 HP**를 찾아 설정합니다.
-3. OBS 브라우저 소스 URL: `http://127.0.0.1:24050/lr2hp/` (기본 크기 600x70, 세그먼트 수에 따라 폭이 달라집니다)
+1. `lr2hp`와 `lr2hp-dashboard` 폴더를 tosu의 `static` 폴더에 복사합니다. 예: `tosu/static/lr2hp`, `tosu/static/lr2hp-dashboard`
+2. tosu 대시보드(`http://127.0.0.1:24050`)에서 **LR2 HP**와 **LR2 HP Dashboard**를 찾아 설정합니다.
+3. OBS 브라우저 소스 URL
+   - 게이지: `http://127.0.0.1:24050/lr2hp/` (기본 크기 600x70, 세그먼트 수에 따라 폭이 달라집니다)
+   - 대시보드: `http://127.0.0.1:24050/lr2hp-dashboard/` (230x260)
+
+대시보드는 게이지 오버레이의 코드를 함께 쓰고, 키 배치와 공POOR 설정도 게이지 오버레이(**LR2 HP**) 쪽 설정을 그대로 읽습니다. 그래서 두 폴더를 나란히 설치해야 합니다.
 
 osu! 자체 HP로 실패하면 플레이가 끝나므로 **NF(No Fail)** 를 켜고 플레이하는 것을 권장합니다.
 
@@ -81,12 +86,32 @@ tosu API는 키 카운터를 4개(`k1, k2, m1, m2`)까지만 내보내기 때문
 - tosu의 hitErrors에 레이저 롱노트 끝 판정이 섞여 들어오는 경우가 있을 수 있는데, 노트 머리 위치와 맞지 않는 항목은 보정에 쓰지 않습니다.
 - RD(랜덤) 같은 레인 셔플 모드에서는 레인을 구분하지 않고 매칭합니다.
 
+## 대시보드 (BMS 기준)
+
+| 항목 | 계산 |
+|---|---|
+| EX SCORE | PGREAT × 2 + GREAT |
+| RATE | EX SCORE ÷ (지금까지 판정된 노트 수 × 2) |
+| 랭크 | RATE 기준. AAA 8/9 이상, AA 7/9, A 6/9, B 5/9, C 4/9, D 3/9, E 2/9, 그 아래 F |
+| PG / GR / GD / BD / PR | 판정 대응표와 같습니다 |
+| KP | 공POOR |
+| CB | 콤보 브레이크 = BAD + POOR |
+| MAX.C | BMS 콤보. PG/GR/GD는 이어지고 BAD/POOR에서 끊기며, 공POOR는 영향이 없습니다 |
+
+FAST/SLOW는 이렇게 셉니다.
+
+- PG~BD: osu!가 보낸 hitErrors 오차값의 부호로 나눕니다. 판정 칸은 레이저 매니아 판정 범위로 나눕니다(OD 기준, HR/EZ 반영). 경계에 걸린 몇 개는 합계 칸과 1~2개 차이가 날 수 있습니다.
+- PR: 이른 MISS는 FAST, 노트를 놓친 MISS는 SLOW입니다.
+- KP: 다음 노트에 더 가까운 헛누름은 FAST, 이전 노트에 더 가까운 헛누름은 SLOW입니다.
+
+이미지는 beatoraja simple-play의 `customize/counter`(default / default_old)와 `customize/rank`(noto 기본, default, default_s, default2, block, neonew, KCOOL)를 씁니다.
+
 ## 미리보기 / 테스트
 
-- `lr2hp/index.html?demo=1`: tosu 없이 가짜 플레이로 게이지를 확인합니다. URL 파라미터로 설정을 덮어쓸 수 있습니다. 예: `?demo=1&startGauge=HARD&parts=60`
-- `npm test`: 게이지 계산, `.osu` 파싱, 입력 판별 단위 테스트
+- `lr2hp/index.html?demo=1`, `lr2hp-dashboard/index.html?demo=1`: tosu 없이 가짜 플레이로 화면을 확인합니다. URL 파라미터로 설정을 덮어쓸 수 있습니다. 예: `?demo=1&startGauge=HARD&parts=60`
+- `npm test`: 게이지 계산, `.osu` 파싱, 입력 판별, 점수/랭크 단위 테스트
 - `?debug`: 브라우저 콘솔에서 `lr2hp.classifier.log`로 최근 입력 판별 기록을 볼 수 있습니다.
 
 ## 크레딧
 
-게이지 / 숫자 이미지: beatoraja 스킨 *simple-play* (mnpy). 스킨 readme에 따라 자유롭게 이용·수정·재배포할 수 있습니다.
+게이지 / 숫자 / 카운터 / 랭크 이미지: beatoraja 스킨 *simple-play* (mnpy). 스킨 readme에 따라 자유롭게 이용·수정·재배포할 수 있습니다.

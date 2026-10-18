@@ -1,0 +1,29 @@
+:root {
+    --scale: 1;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    overflow: hidden;
+}
+
+#root {
+    position: absolute;
+    left: 0;
+    top: 0;
+    transform: scale(var(--scale));
+    transform-origin: 0 0;
+    transition: opacity 0.3s;
+}
+
+#root.hidden {
+    opacity: 0;
+}
+
+#dash {
+    display: block;
+    image-rendering: pixelated;
+}

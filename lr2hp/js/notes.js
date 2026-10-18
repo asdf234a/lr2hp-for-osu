@@ -44,6 +44,29 @@ export function judgementCount(chart, lazer) {
     return chart.notes.length + (lazer ? holds : 0);
 }
 
+// osu!lazer mania hit windows (ms, half-width) for an OD, like ManiaHitWindows:
+// each window is interpolated between its OD 0 / 5 / 10 values. HR tightens by 1.4, EZ loosens.
+const WINDOW_RANGES = {
+    perfect: [22.4, 19.4, 13.9],
+    great: [64, 49, 34],
+    good: [97, 82, 67],
+    ok: [127, 112, 97],
+    meh: [151, 136, 121],
+    miss: [188, 173, 158],
+};
+
+export function maniaWindows(od, mods = new Set()) {
+    let scale = 1;
+    if (mods.has('HR')) scale /= 1.4;
+    if (mods.has('EZ')) scale *= 1.4;
+    const w = {};
+    for (const [name, [min, mid, max]] of Object.entries(WINDOW_RANGES)) {
+        const v = od > 5 ? mid + (max - mid) * (od - 5) / 5 : od < 5 ? mid - (mid - min) * (5 - od) / 5 : mid;
+        w[name] = v * scale;
+    }
+    return w;
+}
+
 // Key names accepted in the key layout settings, mapped to Windows virtual-key codes.
 const NAMED_KEYS = {
     space: 0x20, spacebar: 0x20, enter: 0x0d, tab: 0x09, backspace: 0x08,
