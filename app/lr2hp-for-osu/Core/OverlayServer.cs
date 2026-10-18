@@ -77,11 +77,18 @@ public sealed class OverlayServer : IDisposable
             tcp.NoDelay = true;
             var stream = tcp.GetStream();
             var request = ReadRequest(stream);
-            var key = request.Split("\r\n").Select(l => l.Split(':', 2)).FirstOrDefault(p => p.Length == 2 && p[0].Trim().Equals("Sec-WebSocket-Key", StringComparison.OrdinalIgnoreCase))?[1].Trim();
+            if (!LocalOrigin.IsAllowed(request, Port))
+            {
+                Log.Write($"refused a connection from Origin {LocalOrigin.Header(request, "Origin") ?? "-"}, Host {LocalOrigin.Header(request, "Host") ?? "-"}");
+                stream.Write(Encoding.ASCII.GetBytes("HTTP/1.1 403 Forbidden\r\nContent-Length: 0\r\nConnection: close\r\n\r\n"));
+                return;
+            }
+            var key = LocalOrigin.Header(request, "Sec-WebSocket-Key");
             if (key == null)
             {
+                // No Access-Control-Allow-Origin: other websites have no business reading this
                 var body = Encoding.ASCII.GetBytes("lr2hp-for-osu is running.");
-                var head = Encoding.ASCII.GetBytes($"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nAccess-Control-Allow-Origin: *\r\nContent-Length: {body.Length}\r\nConnection: close\r\n\r\n");
+                var head = Encoding.ASCII.GetBytes($"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\nContent-Length: {body.Length}\r\nConnection: close\r\n\r\n");
                 stream.Write(head);
                 stream.Write(body);
                 tcp.Close();
