@@ -108,7 +108,7 @@ public sealed partial class MainWindow : Window
         if (this.FindControl<RadioButton>("TitlesOriginal") is { } original) original.IsChecked = !english;
         if (this.FindControl<RadioButton>("TitlesEnglish") is { } eng) eng.IsChecked = english;
         if (this.FindControl<RadioButton>("Theme" + (app.Settings.Theme is "Light" or "System" ? app.Settings.Theme : "Dark")) is { } theme) theme.IsChecked = true;
-        if (this.FindControl<RadioButton>(app.Settings.LampBlink switch { "skin" => "BlinkSkin", "off" => "BlinkOff", _ => "BlinkSoft" }) is { } blink) blink.IsChecked = true;
+        if (this.FindControl<RadioButton>(app.Settings.LampBlink switch { "fast" => "BlinkFast", "off" => "BlinkOff", _ => "BlinkSlow" }) is { } blink) blink.IsChecked = true;
         fillingSettings = false;
         if (this.FindControl<TextBlock>("KeysInfo") is { } keys) keys.Text = viewModel.KeysDetails;
         if (this.FindControl<TextBlock>("FolderInfo") is { } folder) folder.Text = Paths.Root;

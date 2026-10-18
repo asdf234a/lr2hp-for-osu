@@ -85,7 +85,7 @@
       </Animation>
     </Style.Animations>
   </Style>
-  <!-- "Soft" blink setting: the same two colours, faded slowly -->
+  <!-- "Slow" blink setting: the same two colours, faded slowly -->
   <Style Selector="Border.lampflash.slow.soft">
     <Style.Animations>
       <Animation Duration="0:0:1.2" IterationCount="INFINITE" PlaybackDirection="Alternate" Easing="SineEaseInOut">

@@ -66,10 +66,10 @@
                       </StackPanel>
                     </StackPanel>
                     <StackPanel Spacing="6">
-                      <TextBlock Classes="muted" FontSize="12" FontWeight="SemiBold" Text="EX-HARD / FAILED lamp blink" />
+                      <TextBlock Classes="muted" FontSize="12" FontWeight="SemiBold" Text="Lamp blink" ToolTip.Tip="FAILED, EX-HARD, FULL COMBO, PERFECT and MAX blink; the others stay still" />
                       <StackPanel Orientation="Horizontal" Spacing="12">
-                        <RadioButton x:Name="BlinkSoft" GroupName="blink" Content="Soft" IsCheckedChanged="BlinkChanged" ToolTip.Tip="A slow fade between the two colours" />
-                        <RadioButton x:Name="BlinkSkin" GroupName="blink" Content="Skin" IsCheckedChanged="BlinkChanged" ToolTip.Tip="As fast as the m_select skin (100 ms / 50 ms)" />
+                        <RadioButton x:Name="BlinkSlow" GroupName="blink" Content="Slow" IsCheckedChanged="BlinkChanged" ToolTip.Tip="A slow fade between the two colours" />
+                        <RadioButton x:Name="BlinkFast" GroupName="blink" Content="Fast" IsCheckedChanged="BlinkChanged" ToolTip.Tip="As fast as the m_select skin (100 ms / 50 ms)" />
                         <RadioButton x:Name="BlinkOff" GroupName="blink" Content="Off" IsCheckedChanged="BlinkChanged" />
                       </StackPanel>
                     </StackPanel>

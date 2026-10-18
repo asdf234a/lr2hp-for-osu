@@ -9,8 +9,8 @@ public sealed class AppSettings
     public string ProcessName { get; set; } = "osu!";
     /// <summary>"Dark", "Light" or "System"</summary>
     public string Theme { get; set; } = "Dark";
-    /// <summary>EX-HARD / FAILED lamp blink: "skin" (m_select's own 100 / 50 ms), "soft" (slow fade) or "off"</summary>
-    public string LampBlink { get; set; } = "soft";
+    /// <summary>Lamp blink (FAILED, EX-HARD, FC, PERFECT, MAX): "slow" (a slow fade), "fast" (m_select's own 100 / 50 ms) or "off"</summary>
+    public string LampBlink { get; set; } = "slow";
     /// <summary>Song and artist names: "original" (their own language) or "english" (romanised)</summary>
     public string TitleLanguage { get; set; } = "original";
     public bool AlwaysOnTop { get; set; } = true;

@@ -32,13 +32,18 @@ public static class ThemeService
         ["HoverCardBorderBrush"] = ("#2E3441", "#D3D8E0"),
 
         // Clear lamps, from the m_select skin's clearlamp.png (the second colour is the blink frame).
-        // Light mode darkens them so HARD's white and EASY's green stay readable.
+        // Light mode darkens them so HARD's white and EASY's green stay readable. The skin's pure
+        // red (#FF0000) is toned down a little.
+        ["LampMaxBrush"] = ("#FF9900", "#E68A00"),
+        ["LampPerfectBrush"] = ("#00FF00", "#00A800"),
+        ["LampFcBrush"] = ("#00FFFF", "#0099AA"),
+        ["LampFcFlashBrush"] = ("#FFFFFF", "#7A8291"),
         ["LampExHardBrush"] = ("#FF9900", "#E68A00"),
-        ["LampExHardFlashBrush"] = ("#FF0000", "#E00000"),
+        ["LampExHardFlashBrush"] = ("#E64C4C", "#C83C3C"),
         ["LampHardBrush"] = ("#FFFFFF", "#7A8291"),
         ["LampGrooveBrush"] = ("#00BAFF", "#0095D9"),
         ["LampEasyBrush"] = ("#00FF00", "#00A800"),
-        ["LampFailedBrush"] = ("#FF0000", "#E00000"),
+        ["LampFailedBrush"] = ("#E64C4C", "#C83C3C"),
         ["LampFailedFlashBrush"] = ("#993300", "#993300"),
         ["LampNoneBrush"] = ("#5F6776", "#9AA3B2"),
         ["RankAaaBrush"] = ("#F5C451", "#A86B00"),

@@ -7,7 +7,7 @@ namespace LR2HP.Core;
 /// <summary>One clear, as the gauge overlay reported it at the results screen.</summary>
 public sealed class ClearRecord
 {
-    /// <summary>"failed", "easy", "groove", "hard" or "exhard"</summary>
+    /// <summary>"failed", "easy", "groove", "hard", "exhard", "fc", "perfect" or "max"</summary>
     public string Lamp { get; set; } = "";
     public DateTime Date { get; set; }
     /// <summary>The overlay's TOTAL option: "standard", "lr2", "beatoraja" or "custom"</summary>
@@ -54,12 +54,25 @@ public sealed class ClearStore
 
     public event Action<string>? Changed;
 
-    public static readonly string[] Lamps = ["failed", "easy", "groove", "hard", "exhard"];
+    public ClearStore()
+    {
+        // Records saved before the combo lamps existed get them from their judge counts
+        var upgraded = false;
+        foreach (var record in db.Maps.Values.SelectMany(m => m.Rates.Values).SelectMany(l => l))
+            upgraded |= UpgradeLamp(record);
+        if (upgraded) JsonFile.Save(Paths.ClearsFile, db);
+    }
+
+    /// <summary>beatoraja's clear types, lowest first</summary>
+    public static readonly string[] Lamps = ["failed", "easy", "groove", "hard", "exhard", "fc", "perfect", "max"];
 
     public static int Rank(string lamp) => Array.IndexOf(Lamps, lamp);
 
     public static string Label(string lamp) => lamp switch
     {
+        "max" => "MAX",
+        "perfect" => "PERFECT",
+        "fc" => "FULL COMBO",
         "exhard" => "EX-HARD CLEAR",
         "hard" => "HARD CLEAR",
         "groove" => "CLEAR",
@@ -74,6 +87,21 @@ public sealed class ClearStore
     /// </summary>
     public static string ScoringOf(string client, string mods) =>
         client != "stable" || mods.Contains("V2", StringComparison.OrdinalIgnoreCase) ? "v2" : "v1";
+
+    /// <summary>
+    /// The combo lamps, as beatoraja gives them: FULL COMBO with no BAD or POOR (empty POOR doesn't
+    /// break combo), PERFECT with no GOOD either, MAX with every note a PGREAT.
+    /// Counts are PG, GR, GD, BD, POOR. Returns whether the lamp went up.
+    /// </summary>
+    public static bool UpgradeLamp(ClearRecord r)
+    {
+        var c = r.Counts;
+        if (c.Length < 5 || r.Notes <= 0 || c[3] + c[4] > 0 || c.Take(3).Sum() < r.Notes) return false;
+        var lamp = c[1] + c[2] == 0 ? "max" : c[2] == 0 ? "perfect" : "fc";
+        if (Rank(lamp) <= Rank(r.Lamp)) return false;
+        r.Lamp = lamp;
+        return true;
+    }
 
     public static string RateKey(double rate) => Math.Round(rate, 2).ToString("0.0#", CultureInfo.InvariantCulture);
 
@@ -114,6 +142,7 @@ public sealed class ClearStore
                 ? g.EnumerateObject().Where(p => p.Value.ValueKind == JsonValueKind.Number).ToDictionary(p => p.Name, p => Math.Round(p.Value.GetDouble(), 2))
                 : new(),
         };
+        UpgradeLamp(record);
         var rate = RateKey(play?.Rate ?? (Num(m, "rate") is > 0 and var r ? r : 1));
 
         lock (gate)

@@ -82,8 +82,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private IBrush rankBrush = Brushes.White;
     public IBrush RankBrush { get => rankBrush; private set => Set(ref rankBrush, value); }
 
-    // Blinking lamps, as in the m_select skin: EX-HARD swaps to its second colour every 50 ms
-    // (100 ms cycle), FAILED every 25 ms (50 ms cycle). The others stay still.
+    // Blinking lamps, as in the m_select skin: EX-HARD, FULL COMBO, PERFECT and MAX swap to their
+    // second colour every 50 ms (100 ms cycle), FAILED every 25 ms (50 ms cycle). The others stay still.
     private IBrush bestFlashBrush = Brushes.Transparent;
     public IBrush BestFlashBrush { get => bestFlashBrush; private set => Set(ref bestFlashBrush, value); }
 
@@ -93,7 +93,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private bool lampFlashFast;
     public bool LampFlashFast { get => lampFlashFast; private set => Set(ref lampFlashFast, value); }
 
-    /// <summary>The "soft" blink setting: a slow fade instead of the skin's flicker</summary>
+    /// <summary>The "slow" blink setting: a slow fade instead of the skin's flicker</summary>
     private bool lampFlashSoft;
     public bool LampFlashSoft { get => lampFlashSoft; private set => Set(ref lampFlashSoft, value); }
 
@@ -118,6 +118,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     private IBrush LampBrush(string lamp) => ThemeService.Brush(window, lamp switch
     {
+        "max" => "LampMaxBrush",
+        "perfect" => "LampPerfectBrush",
+        "fc" => "LampFcBrush",
         "exhard" => "LampExHardBrush",
         "hard" => "LampHardBrush",
         "groove" => "LampGrooveBrush",
@@ -128,6 +131,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     private static string Short(string lamp) => lamp switch
     {
+        "max" => "MAX",
+        "perfect" => "PERF",
+        "fc" => "FC",
         "exhard" => "EXH",
         "hard" => "HARD",
         "groove" => "CLEAR",
@@ -187,12 +193,13 @@ public sealed class MainViewModel : INotifyPropertyChanged
             BestLamp = ClearStore.Label(lamp.Lamp);
             BestBrush = LampBrush(lamp.Lamp);
             var blink = app.Settings.LampBlink;
-            LampFlashSlow = blink != "off" && lamp.Lamp == "exhard";
+            LampFlashSlow = blink != "off" && lamp.Lamp is "exhard" or "fc" or "perfect" or "max";
             LampFlashFast = blink != "off" && lamp.Lamp == "failed";
-            LampFlashSoft = blink == "soft";
+            LampFlashSoft = blink != "fast";
             BestFlashBrush = lamp.Lamp switch
             {
                 "exhard" => ThemeService.Brush(window, "LampExHardFlashBrush"),
+                "fc" or "perfect" or "max" => ThemeService.Brush(window, "LampFcFlashBrush"),
                 "failed" => ThemeService.Brush(window, "LampFailedFlashBrush"),
                 _ => Brushes.Transparent,
             };
