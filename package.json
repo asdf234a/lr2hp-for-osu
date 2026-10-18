@@ -6,6 +6,5 @@
   "description": "LR2-style HP gauge overlay for osu!mania on tosu",
   "scripts": {
     "test": "node --test test/*.test.js"
-  },
-  "license": "MIT"
+  }
 }
