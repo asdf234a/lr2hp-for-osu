@@ -4,7 +4,8 @@
 #   python tools/import_judges.py "<beatoraja>/skin/<simple-play>/customize/judge" [out folder] [--only Iridium --as default]
 #
 # --only picks one judge set; --as gives it another folder name. Without them every set is copied.
-# The images come from many different skins, so they are not kept in the repo.
+# Sets already in the output folder's judges.json are kept, so it can be run once per set.
+# The repo ships only the judge sets of the original simple-play (mnpy); add others with this.
 import json, os, re, shutil, sys
 from PIL import Image
 
@@ -35,7 +36,13 @@ def lua_numbers(text):
     text = re.sub(r'--[^\n]*', '', text)
     return {k: float(v) for k, v in re.findall(r'([A-Z_]+)\s*=\s*(-?[\d.]+)', text)}
 
-sets = {}
+index = os.path.join(dst, 'judges.json')
+try:
+    with open(index, encoding='utf-8') as f:
+        sets = json.load(f)
+except (OSError, ValueError):
+    sets = {}
+added = 0
 for name in sorted(os.listdir(src)):
     if only and name != only:
         continue
@@ -63,7 +70,9 @@ for name in sorted(os.listdir(src)):
         'scaleHeight': values['JUDGEF_SCALE_ANIMATION_HEIGHT'],
         'opacity': values['JUDGEF_SCALE_ANIMATION_OPACITY'],
     }
+    added += 1
 
-with open(os.path.join(dst, 'judges.json'), 'w', encoding='utf-8') as f:
+os.makedirs(dst, exist_ok=True)
+with open(index, 'w', encoding='utf-8') as f:
     json.dump(sets, f, indent=2, ensure_ascii=False)
-print(f'{len(sets)} judge sets -> {os.path.abspath(dst)}')
+print(f'{added} added, {len(sets)} judge sets in {os.path.abspath(dst)}')

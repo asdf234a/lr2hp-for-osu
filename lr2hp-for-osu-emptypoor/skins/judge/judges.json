@@ -1,0 +1,46 @@
+{
+  "default": {
+    "name": "default3",
+    "width": 180.0,
+    "height": 50.0,
+    "frames": 1,
+    "cycle": 75.0,
+    "scaleTime": 100.0,
+    "scaleWidth": 60.0,
+    "scaleHeight": 16.0,
+    "opacity": 128.0
+  },
+  "default1": {
+    "name": "default1",
+    "width": 180.0,
+    "height": 50.0,
+    "frames": 2,
+    "cycle": 75.0,
+    "scaleTime": 100,
+    "scaleWidth": 0,
+    "scaleHeight": 0,
+    "opacity": 255
+  },
+  "default2": {
+    "name": "default2",
+    "width": 196.0,
+    "height": 60.0,
+    "frames": 2,
+    "cycle": 75.0,
+    "scaleTime": 100,
+    "scaleWidth": 0,
+    "scaleHeight": 0,
+    "opacity": 255
+  },
+  "default4": {
+    "name": "default4",
+    "width": 204.0,
+    "height": 58.0,
+    "frames": 2,
+    "cycle": 75.0,
+    "scaleTime": 100,
+    "scaleWidth": 0,
+    "scaleHeight": 0,
+    "opacity": 255
+  }
+}

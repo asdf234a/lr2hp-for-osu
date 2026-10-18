@@ -11,11 +11,7 @@ osu!lazer 매니아(1~7K)용 LR2 HP 게이지 [tosu](https://github.com/tosuapp/
    - `lr2hp-for-osu-overlays-*.zip`: 오버레이 3개 (게이지, 대시보드, 공POOR 표시)
    - `lr2hp-for-osu-app-*.zip`: `lr2hp-for-osu.exe` ([.NET 10 데스크톱 런타임](https://dotnet.microsoft.com/download/dotnet/10.0) 필요)
 2. 오버레이 압축을 풀어 세 폴더를 tosu의 `static` 폴더에 넣습니다. 예: `tosu/static/lr2hp-for-osu`. 세 폴더는 코드를 함께 쓰므로 나란히 있어야 합니다.
-3. 공POOR 표시 오버레이를 쓰려면 판정 이미지를 직접 가져옵니다. 다른 스킨의 이미지라 함께 배포하지 않습니다.
-   ```
-   python tools/import_judges.py "<beatoraja>/skin/<simple-play>/customize/judge" "<tosu>/static/lr2hp-for-osu-emptypoor/skins/judge" --only Iridium --as default
-   ```
-4. 앱 압축을 원하는 곳(예: `tosu/lr2hp-for-osu/`)에 풀고 `lr2hp-for-osu.exe`를 실행합니다. 기록과 설정은 exe와 같은 폴더에만 저장되므로 폴더째 옮겨도 그대로 따라갑니다.
+3. 앱 압축을 원하는 곳(예: `tosu/lr2hp-for-osu/`)에 풀고 `lr2hp-for-osu.exe`를 실행합니다. 기록과 설정은 exe와 같은 폴더에만 저장되므로 폴더째 옮겨도 그대로 따라갑니다.
 
 ### 플레이
 
@@ -110,12 +106,51 @@ osu!lazer 매니아(1~7K)용 LR2 HP 게이지 [tosu](https://github.com/tosuapp/
 
 | 설정 | 기본값 | 설명 |
 |---|---|---|
-| Judge image | default | `skins/judge`의 POOR 판정 이미지 |
+| Judge image | default | `skins/judge`의 POOR 판정 이미지. default: simple-play 원작 default3의 MISS / default1, default2, default4: 원작의 POOR 이미지 |
 | Trim empty space | 켬 | 이미지의 빈 공간을 잘라 글자에 맞춤 |
 | Show time (ms) | 500 | 표시 시간 (beatoraja 기준 500ms) |
 | Scale | 1 | 전체 크기 |
 | lr2hp-for-osu overlay folder | lr2hp-for-osu | 게이지 오버레이 폴더 이름. 키 배치와 공POOR 설정을 여기서 읽습니다 |
 
+## 커스텀 스킨
+
+스킨 이미지는 beatoraja 스킨(simple-play 계열)과 같은 형식입니다. 새 스킨을 넣은 뒤에는 그 오버레이 폴더의 `settings.json`에서 해당 설정의 `options` 목록에 이름을 추가해야 tosu 설정에서 고를 수 있습니다. tosu를 다시 켜거나 대시보드에서 오버레이를 새로고침하면 반영됩니다.
+
+### 게이지 (`lr2hp-for-osu/skins/<이름>/`)
+
+| 파일 | 내용 |
+|---|---|
+| `gauge.png` | beatoraja 8노드 게이지 이미지 (simple-play의 `customize/gauge/<스킨>/gauge.png` 그대로) |
+| `num.png` | 게이지 숫자 이미지 (같은 폴더의 `num.png`) |
+| `skin.json` | `{"segment": [12, 35], "width": 12, "rows": {"groove": 0, "hard": 0, "easy": 1, "exhard": 1}}`. 없으면 이 기본값을 씁니다 |
+
+`gauge.png`나 `num.png`가 없거나 읽을 수 없으면 flat 스킨으로 표시됩니다.
+
+- `segment`: gauge.png에서 노드 한 칸의 크기 [가로, 세로]
+- `width`: Gauge length가 0일 때 화면에서 한 칸의 폭(px)
+- `rows`: 게이지별로 쓸 노드 줄 (0: 위 줄, 1: 아래 줄)
+
+`skins/flat` 폴더를 복사해 이미지만 바꾸는 게 가장 쉽습니다. 그다음 `lr2hp-for-osu/settings.json`의 `skin` 설정 `options`에 폴더 이름을 넣습니다.
+
+### 대시보드 (`lr2hp-for-osu-dashboard/skins/`)
+
+- 카운터: `skins/counter/<이름>.png`. simple-play의 `customize/counter` 이미지와 같은 배치. `settings.json`의 `counter` 옵션에 이름 추가
+- 랭크: `skins/rank/<이름>.png`. simple-play의 `customize/rank` 이미지와 같은 배치. `settings.json`의 `rank` 옵션에 이름 추가
+
+### 공POOR 판정 (`lr2hp-for-osu-emptypoor/skins/judge/`)
+
+beatoraja 판정 스킨 폴더(`F_PR.png`와 `judge.lua`가 있는 폴더)에서 가져옵니다. Python과 Pillow가 필요합니다.
+
+```
+python tools/import_judges.py "<beatoraja>/skin/<스킨>/customize/judge" "<tosu>/static/lr2hp-for-osu-emptypoor/skins/judge" --only <판정 폴더 이름>
+```
+
+- `--only`: 가져올 판정 폴더 하나. 빼면 모든 판정 폴더를 가져옵니다
+- `--as <이름>`: 다른 이름으로 저장. 예: `--as default`로 기본 판정을 바꿉니다
+- 이미 있는 판정은 그대로 두고 `judges.json`에 추가합니다
+
+그다음 `lr2hp-for-osu-emptypoor/settings.json`의 `judge` 옵션에 이름을 추가합니다. `--as default`로 넣었다면 추가할 필요가 없습니다.
+
 ---
 
-게이지·숫자·카운터·랭크 이미지: beatoraja 스킨 *simple-play* (mnpy)
+게이지·숫자·카운터·랭크·판정 이미지: beatoraja 스킨 *simple-play* (mnpy) 및 그 수정본

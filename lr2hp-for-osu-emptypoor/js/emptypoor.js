@@ -83,7 +83,7 @@ async function loadJudge() {
     const names = Object.keys(judges);
     if (!names.length) {
         judge = null;
-        note.textContent = 'No judge images. Run tools/import_judges.py (see README).';
+        note.textContent = 'No judge images in skins/judge (see README).';
         return;
     }
     note.textContent = '';

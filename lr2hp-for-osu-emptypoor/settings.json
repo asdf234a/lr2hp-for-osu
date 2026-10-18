@@ -1,5 +1,5 @@
 [
-    { "uniqueID": "judge", "type": "options", "title": "Judge image", "description": "The POOR judge image in skins/judge (default: Iridium from beatoraja simple-play).", "options": ["default"], "value": "default" },
+    { "uniqueID": "judge", "type": "options", "title": "Judge image", "description": "The POOR judge image in skins/judge. default: MISS from beatoraja simple-play (mnpy) default3; default1 / default2 / default4: its POOR images. Add your own with tools/import_judges.py and list its name here.", "options": ["default", "default1", "default2", "default4"], "value": "default" },
     { "uniqueID": "trim", "type": "checkbox", "title": "Trim empty space", "description": "Crop the image to the visible text so the overlay box hugs it.", "options": "", "value": true },
     { "uniqueID": "duration", "type": "number", "title": "Show time (ms)", "description": "beatoraja shows a judge for 500 ms.", "options": "", "value": 500 },
     { "uniqueID": "scale", "type": "number", "title": "Scale", "description": "", "options": "", "value": 1 },
