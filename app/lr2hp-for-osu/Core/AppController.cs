@@ -9,6 +9,9 @@ public sealed class AppSettings
     public string ProcessName { get; set; } = "osu!";
     /// <summary>"Dark", "Light" or "System"</summary>
     public string Theme { get; set; } = "Dark";
+    /// <summary>Song and artist names: "original" (their own language) or "english" (romanised)</summary>
+    public string TitleLanguage { get; set; } = "original";
+    public bool AlwaysOnTop { get; set; } = true;
     public int? WindowX { get; set; }
     public int? WindowY { get; set; }
 }

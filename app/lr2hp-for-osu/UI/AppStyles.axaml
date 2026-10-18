@@ -101,4 +101,34 @@
   <Style Selector="Button.ghost Path">
     <Setter Property="Stroke" Value="{DynamicResource TextSecondaryBrush}" />
   </Style>
+  <!-- Filled icons (settings gear, pin) -->
+  <Style Selector="Button.icon Path, ToggleButton.pin Path">
+    <Setter Property="Stroke" Value="{x:Null}" />
+    <Setter Property="Fill" Value="{DynamicResource TextSecondaryBrush}" />
+  </Style>
+  <Style Selector="ToggleButton.pin">
+    <Setter Property="CornerRadius" Value="8" />
+    <Setter Property="BorderThickness" Value="0" />
+  </Style>
+  <Style Selector="ToggleButton.pin Path">
+    <Setter Property="Opacity" Value="0.55" />
+    <Setter Property="RenderTransform" Value="rotate(45deg)" />
+  </Style>
+  <Style Selector="ToggleButton.pin:checked Path">
+    <Setter Property="Fill" Value="{DynamicResource TargetAccentBrush}" />
+    <Setter Property="Opacity" Value="1" />
+    <Setter Property="RenderTransform" Value="rotate(0deg)" />
+  </Style>
+  <Style Selector="ToggleButton.pin:checked /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ButtonBrush}" />
+  </Style>
+  <Style Selector="ToggleButton.pin:pointerover /template/ ContentPresenter#PART_ContentPresenter">
+    <Setter Property="Background" Value="{DynamicResource ButtonHoverBrush}" />
+  </Style>
+  <Style Selector="FlyoutPresenter">
+    <Setter Property="Background" Value="{DynamicResource HoverCardBrush}" />
+    <Setter Property="BorderBrush" Value="{DynamicResource HoverCardBorderBrush}" />
+    <Setter Property="CornerRadius" Value="10" />
+    <Setter Property="Padding" Value="14" />
+  </Style>
 </Styles>

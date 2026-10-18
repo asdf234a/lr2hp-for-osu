@@ -197,6 +197,9 @@ export class PlayTracker {
         this.isLazer = data.client === 'lazer';
         this.client = this.isLazer ? 'lazer' : 'stable';
         this.clearSent = false;
+        // Kept from gameplay: on lazer's results screen tosu reports no mods (rate 1)
+        this.playRate = rateOf(data);
+        this.playMods = data.play?.mods?.name || '';
         this.session = this.newSession(this.notesFromStats(data));
         this.classifier = null;
         this.inResults = false;
@@ -345,8 +348,8 @@ export class PlayTracker {
             checksum: b.checksum || '',
             client: this.client,
             keys: this.chart?.keys || 0,
-            rate: rateOf(this.lastData || data),
-            mods: this.lastData?.play?.mods?.name || '',
+            rate: this.playRate || 1,
+            mods: this.playMods || '',
             lamp,
             gauges,
             total: { mode: this.settings.totalMode, value: Math.round(s.total * 100) / 100 },

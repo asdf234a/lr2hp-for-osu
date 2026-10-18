@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Markup.Xaml;
@@ -26,6 +27,10 @@ public sealed partial class MainWindow : Window
         ThemeService.Apply(this, app.Settings.Theme);
         viewModel = new MainViewModel(app, this);
         DataContext = viewModel;
+
+        Topmost = app.Settings.AlwaysOnTop;
+        this.FindControl<ToggleButton>("PinButton")!.IsChecked = Topmost;
+        UpdatePinTip();
 
         if (app.Settings.WindowX is { } x && app.Settings.WindowY is { } y)
         {
@@ -78,6 +83,40 @@ public sealed partial class MainWindow : Window
     private void SyncKeys(object? sender, RoutedEventArgs e)
     {
         app.SyncKeybinds();
+        viewModel.Refresh();
+        if (this.FindControl<TextBlock>("KeysInfo") is { } info) info.Text = "Reading…";
+    }
+
+    private void TogglePin(object? sender, RoutedEventArgs e)
+    {
+        Topmost = this.FindControl<ToggleButton>("PinButton")!.IsChecked == true;
+        app.Settings.AlwaysOnTop = Topmost;
+        app.SaveSettings();
+        UpdatePinTip();
+    }
+
+    private void UpdatePinTip() =>
+        ToolTip.SetTip(this.FindControl<ToggleButton>("PinButton")!, Topmost ? "Always on top (click to turn off)" : "Not on top (click to keep on top)");
+
+    // Fill the settings flyout with the current values each time it opens
+    private bool fillingSettings;
+
+    private void SettingsOpening(object? sender, EventArgs e)
+    {
+        fillingSettings = true;
+        var english = app.Settings.TitleLanguage == "english";
+        if (this.FindControl<RadioButton>("TitlesOriginal") is { } original) original.IsChecked = !english;
+        if (this.FindControl<RadioButton>("TitlesEnglish") is { } eng) eng.IsChecked = english;
+        fillingSettings = false;
+        if (this.FindControl<TextBlock>("KeysInfo") is { } keys) keys.Text = viewModel.KeysDetails;
+        if (this.FindControl<TextBlock>("FolderInfo") is { } folder) folder.Text = Paths.Root;
+    }
+
+    private void TitlesChanged(object? sender, RoutedEventArgs e)
+    {
+        if (fillingSettings || sender is not RadioButton { IsChecked: true } radio) return;
+        app.Settings.TitleLanguage = radio.Name == "TitlesEnglish" ? "english" : "original";
+        app.SaveSettings();
         viewModel.Refresh();
     }
 

@@ -155,8 +155,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         // Map
         var hasMap = tosu.Connected && s.Checksum.Length > 0;
-        BeatmapTitle = hasMap ? s.Title : "No map selected";
-        BeatmapSubtitle = hasMap ? $"{s.Artist} · {s.Mapper} [{s.Version}]" : "";
+        var english = app.Settings.TitleLanguage == "english";
+        BeatmapTitle = hasMap ? (english ? s.TitleEnglish : s.TitleOriginal) : "No map selected";
+        BeatmapSubtitle = hasMap ? $"{(english ? s.ArtistEnglish : s.ArtistOriginal)} · {s.Mapper} [{s.Version}]" : "";
         if (hasMap && s.Checksum != backgroundFor)
         {
             backgroundFor = s.Checksum;
@@ -170,14 +171,16 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         // Best clear at the selected rate (lamp, best EX score, lowest BP), and what other rates hold
         var rateKey = ClearStore.RateKey(s.Rate);
-        var summaries = hasMap ? app.Clears.Summary(s.Checksum) : [];
+        var scoring = ClearStore.ScoringOf(s.Client, s.Mods);
+        var scoringLabel = ClearStore.ScoringLabel(scoring);
+        var summaries = hasMap ? app.Clears.Summary(s.Checksum, scoring) : [];
         var here = summaries.FirstOrDefault(b => b.Rate == rateKey);
         HasBest = here != null;
         if (here != null)
         {
             var lamp = here.BestLamp;
             var score = here.BestScore;
-            BestHeader = $"Best · {rateKey}×{(s.Keys > 0 ? $" · {s.Keys}K" : "")} · {ClearStore.TotalLabel(lamp)}";
+            BestHeader = $"Best · {scoringLabel} · {rateKey}×{(s.Keys > 0 ? $" · {s.Keys}K" : "")} · {ClearStore.TotalLabel(lamp)}";
             BestLamp = ClearStore.Label(lamp.Lamp);
             BestBrush = LampBrush(lamp.Lamp);
             LampBlinks = lamp.Lamp == "exhard";
@@ -191,9 +194,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
             });
             BestTip = $"{ClearStore.Label(lamp.Lamp)} on {lamp.Date:yyyy-MM-dd HH:mm} ({ClearStore.TotalLabel(lamp)})\n"
                 + $"best EX {score.ExScore:N0} on {score.Date:yyyy-MM-dd} · lowest BP {here.BestBp}\n"
-                + $"{here.Count} clear{(here.Count > 1 ? "s" : "")} at {rateKey}×";
+                + $"{here.Count} record{(here.Count > 1 ? "s" : "")} at {rateKey}× ({scoringLabel})";
         }
-        NoBestText = hasMap ? $"No record at {rateKey}× yet" : "Select a map in osu!";
+        NoBestText = hasMap ? $"No {scoringLabel} record at {rateKey}× yet" : "Select a map in osu!";
         OtherRates = summaries.Where(b => b.Rate != rateKey).Select(b => new RateChip
         {
             Text = $"{b.Rate}×  {Short(b.BestLamp.Lamp)}",
@@ -206,7 +209,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         if (app.Clears.Last is { } last)
         {
             HasLastResult = true;
-            LastResult = $"Saved {last.Record.Date:HH:mm} · {ClearStore.Label(last.Record.Lamp)} · {last.Rate}× · EX {last.Record.ExScore:N0} · {last.Map.Title}";
+            LastResult = $"Saved {last.Record.Date:HH:mm} · {ClearStore.Label(last.Record.Lamp)} · {ClearStore.ScoringLabel(last.Record.Scoring)} · {last.Rate}× · EX {last.Record.ExScore:N0} · {last.Map.Title}";
         }
 
         // Key layout in use for this map

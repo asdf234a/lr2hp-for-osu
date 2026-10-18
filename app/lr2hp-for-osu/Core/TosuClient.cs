@@ -10,7 +10,9 @@ public sealed record TosuSnapshot(
     int State,
     string Checksum,
     string Title,
+    string TitleUnicode,
     string Artist,
+    string ArtistUnicode,
     string Version,
     string Mapper,
     int Keys,
@@ -19,7 +21,13 @@ public sealed record TosuSnapshot(
     string SongsFolder,
     string GameFolder)
 {
-    public static readonly TosuSnapshot Empty = new("", -1, "", "", "", "", "", 0, 1, "", "", "");
+    public static readonly TosuSnapshot Empty = new("", -1, "", "", "", "", "", "", "", 0, 1, "", "", "");
+
+    /// <summary>The title in its own language (falls back to the romanised one)</summary>
+    public string TitleOriginal => TitleUnicode.Length > 0 ? TitleUnicode : Title;
+    public string ArtistOriginal => ArtistUnicode.Length > 0 ? ArtistUnicode : Artist;
+    public string TitleEnglish => Title.Length > 0 ? Title : TitleUnicode;
+    public string ArtistEnglish => Artist.Length > 0 ? Artist : ArtistUnicode;
 
     /// <summary>The fields the UI shows; the rest of tosu's stream changes all the time.</summary>
     public string Key => $"{Client}|{Checksum}|{Rate:0.###}|{Mods}|{State}";
@@ -96,22 +104,28 @@ public sealed class TosuClient : IDisposable
             var isMania = Num(Obj(play, "mode"), "number", -1) == 3 || Num(Obj(beatmap, "mode"), "number", -1) == 3;
             var cs = Num(Obj(Obj(beatmap, "stats"), "cs"), "original", 0);
 
-            var title = Str(beatmap, "titleUnicode");
-            if (title.Length == 0) title = Str(beatmap, "title");
-            var artist = Str(beatmap, "artistUnicode");
-            if (artist.Length == 0) artist = Str(beatmap, "artist");
+            var rate = Num(mods, "rate", 1) is > 0 and var r ? r : 1;
+            var modNames = Str(mods, "name");
+            // lazer's results screen comes with no mods: keep the ones the play had
+            if (state == 7 && modNames.Length == 0 && Current.Checksum == Str(beatmap, "checksum"))
+            {
+                rate = Current.Rate;
+                modNames = Current.Mods;
+            }
 
             var snapshot = new TosuSnapshot(
                 Str(root, "client"),
                 state,
                 Str(beatmap, "checksum"),
-                title,
-                artist,
+                Str(beatmap, "title"),
+                Str(beatmap, "titleUnicode"),
+                Str(beatmap, "artist"),
+                Str(beatmap, "artistUnicode"),
                 Str(beatmap, "version"),
                 Str(beatmap, "mapper"),
                 isMania ? (int)Math.Round(cs) : 0,
-                Num(mods, "rate", 1) is > 0 and var rate ? rate : 1,
-                Str(mods, "name"),
+                rate,
+                modNames,
                 Str(folders, "songs"),
                 Str(folders, "game"));
 

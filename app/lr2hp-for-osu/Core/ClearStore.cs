@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace LR2HP.Core;
 
@@ -24,6 +25,10 @@ public sealed class ClearRecord
     public int MaxCombo { get; set; }
     /// <summary>Every gauge's final value</summary>
     public Dictionary<string, double> Gauges { get; set; } = new();
+
+    /// <summary>"v2" (osu!lazer, or osu!stable with ScoreV2) or "v1" (osu!stable)</summary>
+    [JsonIgnore]
+    public string Scoring => ClearStore.ScoringOf(Client, Mods);
 }
 
 public sealed class MapRecord
@@ -65,6 +70,15 @@ public sealed class ClearStore
         "failed" => "FAILED",
         _ => "NO PLAY",
     };
+
+    /// <summary>
+    /// Records are kept apart by judging: osu!lazer and osu!stable with ScoreV2 judge mania alike
+    /// (LN tails, 320s), plain osu!stable (ScoreV1) does not.
+    /// </summary>
+    public static string ScoringOf(string client, string mods) =>
+        client != "stable" || mods.Contains("V2", StringComparison.OrdinalIgnoreCase) ? "v2" : "v1";
+
+    public static string ScoringLabel(string scoring) => scoring == "v1" ? "stable" : "lazer/V2";
 
     public static string RateKey(double rate) => Math.Round(rate, 2).ToString("0.0#", CultureInfo.InvariantCulture);
 
@@ -118,7 +132,7 @@ public sealed class ClearStore
 
             if (!map.Rates.TryGetValue(rate, out var list)) map.Rates[rate] = list = new List<ClearRecord>();
             // The overlay can report the same results screen twice (reconnects, several overlays)
-            if (list.Any(x => x.Lamp == record.Lamp && x.ExScore == record.ExScore && (record.Date - x.Date).TotalMinutes < 2)) return false;
+            if (list.Any(x => x.Scoring == record.Scoring && x.Lamp == record.Lamp && x.ExScore == record.ExScore && (record.Date - x.Date).TotalMinutes < 2)) return false;
             list.Add(record);
             Last = (map, rate, record);
             JsonFile.Save(Paths.ClearsFile, db);
@@ -155,35 +169,22 @@ public sealed class ClearStore
 
     public sealed record RateSummary(string Rate, ClearRecord BestLamp, ClearRecord BestScore, int BestBp, int Count);
 
-    /// <summary>Per rate: the best lamp, the best EX score and the lowest BP among the clears.</summary>
-    public IReadOnlyList<RateSummary> Summary(string checksum)
+    /// <summary>Per rate: the best lamp, the best EX score and the lowest BP among one scoring's records.</summary>
+    public IReadOnlyList<RateSummary> Summary(string checksum, string scoring)
     {
         lock (gate)
         {
             if (!db.Maps.TryGetValue(checksum, out var map)) return [];
             return map.Rates
-                .Where(p => p.Value.Count > 0)
+                .Select(p => (Rate: p.Key, List: p.Value.Where(x => x.Scoring == scoring).ToList()))
+                .Where(p => p.List.Count > 0)
                 .Select(p => new RateSummary(
-                    p.Key,
-                    p.Value.OrderByDescending(x => Rank(x.Lamp)).ThenByDescending(x => x.Date).First(),
-                    p.Value.OrderByDescending(x => x.ExScore).ThenByDescending(x => x.Date).First(),
-                    p.Value.Min(Bp),
-                    p.Value.Count))
+                    p.Rate,
+                    p.List.OrderByDescending(x => Rank(x.Lamp)).ThenByDescending(x => x.Date).First(),
+                    p.List.OrderByDescending(x => x.ExScore).ThenByDescending(x => x.Date).First(),
+                    p.List.Min(Bp),
+                    p.List.Count))
                 .OrderBy(s => double.Parse(s.Rate, CultureInfo.InvariantCulture))
-                .ToList();
-        }
-    }
-
-    /// <summary>The best clear (highest lamp, newest on ties) per rate for one difficulty.</summary>
-    public IReadOnlyList<(string Rate, ClearRecord Best, int Count)> BestByRate(string checksum)
-    {
-        lock (gate)
-        {
-            if (!db.Maps.TryGetValue(checksum, out var map)) return [];
-            return map.Rates
-                .Where(p => p.Value.Count > 0)
-                .Select(p => (p.Key, p.Value.OrderByDescending(x => Rank(x.Lamp)).ThenByDescending(x => x.Date).First(), p.Value.Count))
-                .OrderBy(p => double.Parse(p.Key, CultureInfo.InvariantCulture))
                 .ToList();
         }
     }
