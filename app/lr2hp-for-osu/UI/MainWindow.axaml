@@ -148,8 +148,6 @@
             </DataTemplate>
           </ItemsControl.ItemTemplate>
         </ItemsControl>
-
-        <TextBlock Classes="secondary mono" FontSize="11" Text="{Binding KeysText}" ToolTip.Tip="{Binding KeysDetails}" TextTrimming="CharacterEllipsis" />
       </StackPanel>
     </StackPanel>
   </Grid>

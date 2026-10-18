@@ -95,8 +95,6 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private bool hasOtherRates;
     public bool HasOtherRates { get => hasOtherRates; private set => Set(ref hasOtherRates, value); }
 
-    private string keysText = "";
-    public string KeysText { get => keysText; private set => Set(ref keysText, value); }
 
     private string keysDetails = "";
     public string KeysDetails { get => keysDetails; private set => Set(ref keysDetails, value); }
@@ -198,16 +196,14 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }).ToList();
         HasOtherRates = OtherRates.Count > 0;
 
-        // Key layout in use for this map
+        // Key bindings, shown in the settings flyout: the layout for this map, then where they came from
         var kb = app.Keybinds;
         var client = s.Client == "stable" ? "stable" : "lazer";
         var layouts = client == "stable" ? kb.Stable : kb.Lazer;
-        KeysText = app.Syncing
-            ? "Reading key bindings…"
-            : s.Keys > 0 && layouts.TryGetValue(s.Keys.ToString(CultureInfo.InvariantCulture), out var layout)
-                ? $"{client} {s.Keys}K · {layout}"
-                : $"Keys: lazer {kb.Lazer.Count} · stable {kb.Stable.Count} layouts";
-        KeysDetails = $"lazer: {kb.LazerSource ?? "not found"}\nstable: {kb.StableSource ?? "not found"}\nread {kb.Updated:yyyy-MM-dd HH:mm}";
+        var current = s.Keys > 0 && layouts.TryGetValue(s.Keys.ToString(CultureInfo.InvariantCulture), out var layout)
+            ? $"{client} {s.Keys}K: {layout}\n"
+            : "";
+        KeysDetails = $"{current}lazer: {kb.LazerSource ?? "not found"}\nstable: {kb.StableSource ?? "not found"}\nread {kb.Updated:yyyy-MM-dd HH:mm}";
     }
 
     private async Task LoadBackground(string checksum)
