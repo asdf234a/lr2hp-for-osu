@@ -92,7 +92,8 @@ public sealed class AppController : IDisposable
                 break;
             case "clear":
             case "result":
-                Clears.AddFromOverlay(root);
+                var checksum = root.TryGetProperty("checksum", out var c) ? c.GetString() : null;
+                Clears.AddFromOverlay(root, Tosu.LastPlay is { } play && play.Checksum == checksum ? (play.Rate, play.Mods) : null);
                 break;
         }
     }

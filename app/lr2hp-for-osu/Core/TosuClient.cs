@@ -42,6 +42,9 @@ public sealed class TosuClient : IDisposable
     public bool Connected { get; private set; }
     public TosuSnapshot Current { get; private set; } = TosuSnapshot.Empty;
 
+    /// <summary>The map, rate and mods of the latest gameplay, as tosu showed them while playing.</summary>
+    public (string Checksum, double Rate, string Mods)? LastPlay { get; private set; }
+
     public event Action<bool>? ConnectionChanged;
     public event Action<TosuSnapshot>? SnapshotChanged;
 
@@ -130,6 +133,7 @@ public sealed class TosuClient : IDisposable
                 Str(folders, "game"));
 
             Current = snapshot;
+            if (state == 2 && snapshot.Checksum.Length > 0) LastPlay = (snapshot.Checksum, rate, modNames);
             if (snapshot.Key == lastKey) return;
             lastKey = snapshot.Key;
             SnapshotChanged?.Invoke(snapshot);

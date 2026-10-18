@@ -89,8 +89,12 @@ public sealed class ClearStore
     /// <summary>The newest record, for the app's "last result" line.</summary>
     public (MapRecord Map, string Rate, ClearRecord Record)? Last { get; private set; }
 
-    /// <summary>Takes a {type:"result"} message from the gauge overlay. Returns false when it was a repeat.</summary>
-    public bool AddFromOverlay(JsonElement m)
+    /// <summary>
+    /// Takes a {type:"result"} message from the gauge overlay. Returns false when it was a repeat.
+    /// play: the rate and mods the app itself saw during that play, which win over the overlay's
+    /// (an overlay page opened before an update can still send rate 1 for a DT play).
+    /// </summary>
+    public bool AddFromOverlay(JsonElement m, (double Rate, string Mods)? play = null)
     {
         string Str(string name) => m.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() ?? "" : "";
         double Num(JsonElement e, string name) => e.ValueKind == JsonValueKind.Object && e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetDouble() : 0;
@@ -108,7 +112,7 @@ public sealed class ClearStore
             TotalMode = total.ValueKind == JsonValueKind.Object && total.TryGetProperty("mode", out var tm) ? tm.GetString() ?? "standard" : "standard",
             Total = Num(total, "value"),
             Client = Str("client"),
-            Mods = Str("mods"),
+            Mods = play?.Mods ?? Str("mods"),
             Notes = (int)Num(m, "notes"),
             ExScore = (int)Num(m, "exScore"),
             ScoreRate = Num(m, "scoreRate"),
@@ -119,7 +123,7 @@ public sealed class ClearStore
                 ? g.EnumerateObject().Where(p => p.Value.ValueKind == JsonValueKind.Number).ToDictionary(p => p.Name, p => Math.Round(p.Value.GetDouble(), 2))
                 : new(),
         };
-        var rate = RateKey(Num(m, "rate") is > 0 and var r ? r : 1);
+        var rate = RateKey(play?.Rate ?? (Num(m, "rate") is > 0 and var r ? r : 1));
 
         lock (gate)
         {
