@@ -82,6 +82,14 @@ const NAMED_KEYS = {
     'num*': 0x6a, 'num+': 0x6b, 'num-': 0x6d, 'num.': 0x6e, 'num/': 0x6f,
 };
 
+// Readable name for a virtual-key code, for diagnostics
+export function vkName(vk) {
+    if ((vk >= 0x30 && vk <= 0x39) || (vk >= 0x41 && vk <= 0x5a)) return String.fromCharCode(vk);
+    for (const [name, code] of Object.entries(NAMED_KEYS)) if (code === vk) return name;
+    if (vk >= 0x70 && vk <= 0x87) return `F${vk - 0x6f}`;
+    return `0x${vk.toString(16)}`;
+}
+
 export function keyNameToVk(name) {
     const k = name.trim().toLowerCase();
     if (!k) return -1;

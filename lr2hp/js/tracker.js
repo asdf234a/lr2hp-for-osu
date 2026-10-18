@@ -1,7 +1,7 @@
 // Follows a play through tosu: judgements, the chart, key presses and empty POOR.
 // Shared by the gauge overlay and the dashboard overlay.
 
-import { parseOsuMania, judgementCount, parseLayout, maniaWindows } from './notes.js';
+import { parseOsuMania, judgementCount, parseLayout, maniaWindows, vkName } from './notes.js';
 import { PressClassifier } from './presses.js';
 import { PlaySession } from './session.js';
 import { SongClock } from './clock.js';
@@ -193,6 +193,7 @@ export class PlayTracker {
         this.inResults = false;
         this.clock.reset();
         this.tosuKeyCounts = null;
+        this.unmapped = new Map(); // helper keys pressed that aren't in the layout: vk -> count
         const current = this.session;
         const mods = modsOf(data);
         const od = Number(data?.beatmap?.stats?.od?.original);
@@ -333,7 +334,12 @@ export class PlayTracker {
             onMessage: (msg) => {
                 if (msg.d !== 1 || !this.chart) return;
                 const column = this.layout.get(msg.vk);
-                if (column === undefined) return;
+                if (column === undefined) {
+                    if (this.session && !this.inResults && this.unmapped) {
+                        this.unmapped.set(msg.vk, (this.unmapped.get(msg.vk) || 0) + 1);
+                    }
+                    return;
+                }
                 // Map the helper's own timestamp onto performance.now(); the smallest
                 // receive delay seen is the closest to the true offset
                 const now = performance.now();
@@ -356,7 +362,11 @@ export class PlayTracker {
         if (showStats && this.classifier) {
             const s = this.classifier.stats;
             const c = this.classifier.calibration;
-            return `hit ${s.hit} · early ${s.earlyMiss} · 空POOR ${s.empty} · sync ${c >= 0 ? '+' : ''}${c.toFixed(1)}ms`;
+            let text = `hit ${s.hit} · early ${s.earlyMiss} · 空POOR ${s.empty} · sync ${c >= 0 ? '+' : ''}${c.toFixed(1)}ms`;
+            // Keys pressed during play that the layout doesn't know: a likely layout mismatch
+            const unmapped = [...(this.unmapped || new Map())].filter(([, n]) => n >= 3);
+            if (unmapped.length) text += ` · unmapped ${unmapped.map(([vk, n]) => `${vkName(vk)}×${n}`).join(' ')}`;
+            return text;
         }
         return '';
     }

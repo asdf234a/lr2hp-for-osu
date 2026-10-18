@@ -4,6 +4,9 @@
 // PERFECT..MEH, the moment the press lands. So a press followed by a new hitErrors
 // entry within a few ms is certainly a note hit, and that entry's offset tells us
 // exactly where the song was at the press, which keeps the song clock calibrated.
+// Entries carry no lane, so each one goes to the waiting press whose lane has a
+// note where the entry's offset says the judged note was; in dense streams the
+// earliest waiting press is often a stray tap in another lane.
 // A press with no entry is either an early MISS (pressed inside the miss window
 // but before the 50 window, which still uses up the note) or an empty POOR; the
 // calibrated clock decides between the two.
@@ -65,13 +68,52 @@ export class PressClassifier {
         return i;
     }
 
+    get calibrated() {
+        return this.residuals.length >= 3;
+    }
+
+    // Where the note judged with `offset` would be if press p made it, against the
+    // nearest unused note in p's lane: { c, i, d } with d = note - implied, or null
+    fit(p, offset) {
+        const implied = this.time(p.wall) - offset;
+        const cols = this.anyColumn ? [...this.columns.keys()] : [p.column];
+        let best = null;
+        for (const c of cols) {
+            const list = this.columns[c];
+            for (let i = this.next[c]; i < list.length; i++) {
+                const d = list[i].time - implied;
+                if (d > 200) break;
+                if (d < -200) continue;
+                if (!best || Math.abs(d) < Math.abs(best.d)) best = { c, i, d };
+            }
+        }
+        return best;
+    }
+
+    // Best press for an entry among `presses`, by how closely its lane fits
+    pickPress(presses, offset) {
+        let pick = null;
+        for (const p of presses) {
+            const f = this.fit(p, offset);
+            if (f && (!pick || Math.abs(f.d) < Math.abs(pick.f.d))) pick = { p, f };
+        }
+        // Before the clock is calibrated fits can be off; fall back to the earliest press
+        if (!pick && !this.calibrated && presses.length) pick = { p: presses[0], f: null };
+        return pick;
+    }
+
     press(inputColumn, wall) {
         if (inputColumn < 0 || inputColumn >= this.keys) return;
         const p = { column: this.lane(inputColumn), wall };
-        const orphan = this.orphans.findIndex((o) => wall - o.wall <= 5 && o.wall - wall <= ORPHAN_KEEP);
-        if (orphan >= 0) {
-            const [o] = this.orphans.splice(orphan, 1);
-            this.confirm(p, o.offset);
+        const near = this.orphans.filter((o) => wall - o.wall <= 5 && o.wall - wall <= ORPHAN_KEEP);
+        let match = null;
+        for (const o of near) {
+            const f = this.fit(p, o.offset);
+            if (f && (!match || Math.abs(f.d) < Math.abs(match.f.d))) match = { o, f };
+        }
+        if (match) {
+            this.orphans.splice(this.orphans.indexOf(match.o), 1);
+            this.confirm(p, match.o.offset, match.f);
             return;
         }
         this.pending.push(p);
@@ -80,13 +122,16 @@ export class PressClassifier {
     // New hitErrors entries (offset = press time - note time, in ms)
     hitErrors(offsets, wall) {
         for (const offset of offsets) {
-            const i = this.pending.findIndex((p) => wall - p.wall <= CONFIRM_WAIT && wall >= p.wall - 5);
-            if (i >= 0) {
-                const [p] = this.pending.splice(i, 1);
-                this.confirm(p, offset);
-            } else {
+            const waiting = this.pending.filter((p) => wall - p.wall <= CONFIRM_WAIT && wall >= p.wall - 5);
+            const pick = this.pickPress(waiting, offset);
+            if (pick) {
+                this.pending.splice(this.pending.indexOf(pick.p), 1);
+                this.confirm(pick.p, offset, pick.f);
+            } else if (!waiting.length) {
                 this.orphans.push({ offset, wall });
             }
+            // Waiting presses but none in a lane with a matching note: the entry
+            // isn't from any of them, so leave them to be settled on their own
         }
     }
 
@@ -105,25 +150,13 @@ export class PressClassifier {
         return results;
     }
 
-    confirm(p, offset) {
+    confirm(p, offset, best = this.fit(p, offset)) {
         this.stats.hit++;
         this.record(p, 'hit', { offset });
-        const est = this.time(p.wall);
-        const cols = this.anyColumn ? [...this.columns.keys()] : [p.column];
-        // The judged note sits at (press time - offset)
-        let best = null;
-        for (const c of cols) {
-            const list = this.columns[c];
-            for (let i = this.next[c]; i < list.length; i++) {
-                const d = list[i].time - (est - offset);
-                if (d > 200) break;
-                if (!best || Math.abs(d) < Math.abs(best.d)) best = { c, i, d };
-            }
-        }
         if (!best) return;
         this.next[best.c] = best.i + 1;
         // Residual between where the clock says we were and where osu! says we were
-        const limit = this.residuals.length >= 3 ? 40 : 120;
+        const limit = this.calibrated ? 40 : 120;
         if (Math.abs(best.d) <= limit) {
             this.residuals.push(this.calibration + best.d);
             if (this.residuals.length > CALIB_SAMPLES) this.residuals.shift();
