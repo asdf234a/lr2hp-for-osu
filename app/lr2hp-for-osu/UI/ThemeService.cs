@@ -33,10 +33,10 @@ public static class ThemeService
 
         // Clear lamps, from the m_select skin's clearlamp.png (the second colour is the blink frame).
         // Light mode darkens them so HARD's white and EASY's green stay readable. The skin's pure
-        // red (#FF0000) is toned down a little.
+        // red (#FF0000), and PERFECT's green and FULL COMBO's cyan, are toned down a little.
         ["LampMaxBrush"] = ("#FF9900", "#E68A00"),
-        ["LampPerfectBrush"] = ("#00FF00", "#00A800"),
-        ["LampFcBrush"] = ("#00FFFF", "#0099AA"),
+        ["LampPerfectBrush"] = ("#40E640", "#00A800"),
+        ["LampFcBrush"] = ("#40E6E6", "#0099AA"),
         ["LampFcFlashBrush"] = ("#FFFFFF", "#7A8291"),
         ["LampExHardBrush"] = ("#FF9900", "#E68A00"),
         ["LampExHardFlashBrush"] = ("#E64C4C", "#C83C3C"),
