@@ -15,7 +15,7 @@ osu!lazer 매니아(1~7K)용 LR2 HP 게이지 [tosu](https://github.com/tosuapp/
 
 ### 플레이
 
-- tosu와 앱을 켜고 osu!lazer에서 매니아를 플레이합니다. osu! 자체 HP로 실패하면 플레이가 끝나므로 **NF(No Fail)** 를 켜는 것을 권장합니다.
+- tosu와 앱을 켜고 osu!lazer 또는 osu!stable에서 매니아를 플레이합니다.
 - 5K 이상은 앱이 켜져 있어야 키 입력(공POOR 판별)을 받을 수 있습니다. 1~4K는 tosu만으로도 동작합니다.
 - 키 배치는 앱이 osu!lazer / stable의 매니아 키 설정에서 자동으로 가져옵니다.
 - 결과 화면까지 간 플레이는 앱에 **맵(난이도) + 배속**별로 저장됩니다. FAILED도 저장됩니다.
