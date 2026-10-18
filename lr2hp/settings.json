@@ -7,7 +7,8 @@
 
     { "uniqueID": "hpoor", "type": "header", "title": "Empty POOR", "description": "", "options": "", "value": "" },
     { "uniqueID": "emptyPoor", "type": "checkbox", "title": "Count empty POOR", "description": "Key presses that don't land on a note. Works with tosu alone on lazer up to 4K; stable and 5K+ need keyhook/start-keyhook.bat running.", "options": "", "value": true },
-    { "uniqueID": "emptyPoorMode", "type": "options", "title": "Empty POOR mode", "description": "all: every stray press during the chart. near: only when the next note in that lane is within 500 ms.", "options": ["all", "near"], "value": "all" },
+    { "uniqueID": "emptyPoorMode", "type": "options", "title": "Empty POOR mode", "description": "lr2oraja: only presses up to 1 s before the lane's next note (LR2's rule). near: next note within 500 ms. all: every stray press during the chart.", "options": ["lr2oraja", "near", "all"], "value": "lr2oraja" },
+    { "uniqueID": "earlyMissAsBad", "type": "checkbox", "title": "Early-press MISS counts as BAD", "description": "osu! gives a MISS for a press 127-164 ms early (OD8); LR2 would call it a BAD. On: that POOR becomes a BAD.", "options": "", "value": true },
     { "uniqueID": "keyHelperPort", "type": "number", "title": "Key helper port", "description": "", "options": "", "value": 24055 },
     { "uniqueID": "inputOffset", "type": "number", "title": "Input offset (ms)", "description": "Usually leave at 0: the song clock calibrates itself from osu!'s hit offsets.", "options": "", "value": 0 },
     { "uniqueID": "showPressStats", "type": "checkbox", "title": "Show press stats", "description": "Debug readout: presses confirmed as hits, early misses, empty POORs and the clock correction.", "options": "", "value": false },

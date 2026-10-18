@@ -66,7 +66,7 @@ function run(seed, { skew, strayEvery }) {
     const truth = referenceJudge(chart, presses);
 
     // Wall clock == song time; our song clock is off by `skew` until calibrated
-    const c = new PressClassifier(chart, { early: EARLY, late: LATE, songTime: (w) => w + skew });
+    const c = new PressClassifier(chart, { early: EARLY, late: LATE, songTime: (w) => w + skew, mode: 'all' });
     // tosu delivers hitErrors in batches (~15 ms timer granularity on Windows)
     const entries = presses
         .map((p, k) => ({ wall: p.t + 2, off: truth[k].off, kind: truth[k].kind }))
@@ -104,7 +104,7 @@ test('still exact when the song clock starts 40 ms off', () => {
 
 test('a stray tap just before a hit in another lane stays an empty POOR', () => {
     const chart = { keys: 7, notes: [{ time: 1000, end: 1000, hold: false, column: 0 }, { time: 3000, end: 3000, hold: false, column: 2 }] };
-    const c = new PressClassifier(chart, { early: EARLY, late: LATE, songTime: (w) => w });
+    const c = new PressClassifier(chart, { early: EARLY, late: LATE, songTime: (w) => w, mode: 'all' });
     c.press(2, 990); // stray: lane 2's note is 2 s away
     c.press(0, 1000); // the real hit
     c.hitErrors([0], 1002);
@@ -120,7 +120,7 @@ function chordCase(order, offsets, extra = []) {
         { time: 1000, end: 1000, hold: false, column: 5 },
         ...extra,
     ].sort((a, b) => a.time - b.time);
-    const c = new PressClassifier({ keys: 7, notes }, { early: EARLY, late: LATE, songTime: (w) => w });
+    const c = new PressClassifier({ keys: 7, notes }, { early: EARLY, late: LATE, songTime: (w) => w, mode: 'all' });
     for (const lane of order) c.press(lane, 1003);
     c.hitErrors(offsets, 1006);
     return c.tick(1300).map((x) => x.result).filter((x) => x !== 'hit');
@@ -155,7 +155,7 @@ test('chord in a dense 7K stream with an extra key each time', () => {
     presses.sort((x, y) => x.t - y.t);
     const chart = { keys: 7, notes };
     const truth = referenceJudge(chart, presses);
-    const c = new PressClassifier(chart, { early: EARLY, late: LATE, songTime: (w) => w });
+    const c = new PressClassifier(chart, { early: EARLY, late: LATE, songTime: (w) => w, mode: 'all' });
     const entries = presses.map((p, k) => ({ wall: p.t + 2, off: truth[k].off })).filter((e, k) => truth[k].kind === 'hit');
     let empties = 0;
     for (let w = 0, pi = 0, ei = 0; w < t + 1000; w += 15) {

@@ -23,6 +23,7 @@ function make(skew = 0, opts = {}) {
         early: 164,
         late: 127,
         songTime: (wall) => wall + skew,
+        mode: 'all',
         ...opts,
     });
 }
@@ -114,4 +115,23 @@ test('mirror flips lanes', () => {
     c.press(0, 1850); // physical lane 1 = chart lane 4, early miss on the 2000 note
     assert.equal(empties(c.tick(2000)), 0);
     assert.equal(c.stats.earlyMiss, 1);
+});
+
+test('lr2oraja mode: empty POOR only up to 1 s before the lane\'s next note', () => {
+    const c = make(0, { mode: 'lr2oraja' });
+    c.press(3, 700); // 1300 ms before the lane's 2000 note: too far
+    c.press(3, 1100); // 900 ms before it
+    assert.deepEqual(c.tick(1300).map((x) => x.result), ['ignored', 'empty']);
+    const d = make(0, { mode: 'lr2oraja' });
+    d.press(0, 1300); // after lane 0's 1000 note, 1700 before its 3000 note
+    d.press(0, 2200); // 800 ms before the 3000 note
+    assert.deepEqual(d.tick(2400).map((x) => x.result), ['ignored', 'empty']);
+});
+
+test('early-press MISS is flagged as early only before the 50 window', () => {
+    const c = make(0);
+    c.press(3, 1850); // 150 ms early: inside the miss window, before the 50 window
+    const [r] = c.tick(2000);
+    assert.equal(r.result, 'earlyMiss');
+    assert.equal(r.early, true);
 });

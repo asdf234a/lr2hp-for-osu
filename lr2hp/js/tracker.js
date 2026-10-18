@@ -14,7 +14,8 @@ export const GAMEPLAY_DEFAULTS = {
     totalValue: 300,
     hideOutsidePlay: true,
     emptyPoor: true,
-    emptyPoorMode: 'all',
+    emptyPoorMode: 'lr2oraja',
+    earlyMissAsBad: true,
     keyHelperPort: 24055,
     inputOffset: 0,
     keys1: 'Space',
@@ -236,10 +237,11 @@ export class PlayTracker {
         if (!this.session || !this.classifier) return;
         for (const r of this.classifier.tick(now)) {
             if (r.result === 'empty') {
-                this.session.addEmptyPoor(r.fast);
+                this.session.addEmptyPoor(r.fast, now);
                 this.emit('emptyPoor', r.fast);
+            } else if (r.result === 'earlyMiss') {
+                this.session.earlyMiss(now, !!this.settings.earlyMissAsBad && r.early);
             }
-            else if (r.result === 'earlyMiss') this.session.earlyMisses++;
         }
     }
 
@@ -260,9 +262,9 @@ export class PlayTracker {
                 this.playKey = key;
                 this.startPlay(data);
             }
-            if (!this.session.applyHits(data.play.hits)) {
+            if (!this.session.applyHits(data.play.hits, now)) {
                 this.startPlay(data);
-                this.session.applyHits(data.play.hits);
+                this.session.applyHits(data.play.hits, now);
             }
             this.clock.sample(live, now, rateOf(data), !!data.game?.paused);
             this.lastLive = live;
@@ -270,7 +272,7 @@ export class PlayTracker {
         } else if (state === STATE_RESULTS && this.session) {
             // Pick up judgements that landed after the last gameplay update
             const hits = data.resultsScreen?.hits;
-            if (hits && !this.inResults) this.session.applyHits(hits);
+            if (hits && !this.inResults) this.session.applyHits(hits, now);
             this.inResults = true;
             this.visible = true;
         } else {

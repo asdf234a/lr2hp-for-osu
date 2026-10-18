@@ -81,7 +81,9 @@ function median(values) {
 
 export class PressClassifier {
     // songTime(wall): uncalibrated song position for a performance.now() timestamp
-    constructor(chart, { early, late, songTime, mirror = false, anyColumn = false, mode = 'all', nearWindow = 500 }) {
+    // mode: 'lr2oraja' = empty POOR only when pressed up to 1 s before the lane's
+    // next note (LR2's rule), 'near' = within nearWindow of it, 'all' = any stray press
+    constructor(chart, { early, late, songTime, mirror = false, anyColumn = false, mode = 'lr2oraja', nearWindow = 500 }) {
         this.keys = chart.keys;
         this.early = early;
         this.late = late;
@@ -297,14 +299,16 @@ export class PressClassifier {
             const note = list[i];
             if (!note) continue;
             nearest = Math.min(nearest, note.time - t);
-            // Inside the miss window: osu! scored an early MISS on this note
+            // Inside the miss window: osu! scored an early MISS on this note.
+            // `early` says it was before the 50 window, i.e. a real early-press MISS
             if (note.time - this.early <= t) {
                 this.use(c, i);
-                return { result: 'earlyMiss', fast: true };
+                return { result: 'earlyMiss', fast: true, early: note.time - t > this.late };
             }
         }
         // FAST when the stray press is closer to the coming note than to the last one
         const fast = nearest < since;
+        if (this.mode === 'lr2oraja') return { result: nearest <= 1000 ? 'empty' : 'ignored', fast: true };
         if (this.mode === 'near') return { result: nearest <= this.nearWindow ? 'empty' : 'ignored', fast };
         if (t < this.first - this.early || t > this.last + this.late) return { result: 'ignored', fast };
         return { result: 'empty', fast };

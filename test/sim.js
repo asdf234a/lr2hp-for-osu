@@ -98,6 +98,7 @@ export function runClassifier(chart, presses, truth, rand, { skew = 0, jitter = 
         early: EARLY,
         late: LATE,
         songTime: (w) => w + skew + Math.sin(w / 37) * jitter,
+        mode: 'all', // the reference judge counts every stray press
     });
     const entries = presses
         .map((p, k) => ({ wall: p.t + delay[0] + Math.floor(rand() * (delay[1] - delay[0])), off: truth[k].off, kind: truth[k].kind }))
