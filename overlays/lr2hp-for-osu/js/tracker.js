@@ -114,6 +114,7 @@ export class PlayTracker {
         this.onResults = false; // showing the results screen of the play
         this.scStatus = 0;
         this.watchingReplay = false;
+        this.playing = false; // in gameplay: the app polls the chart's keys
         this.lastState = -1;
         this.lastLive = 0;
         this.isLazer = false;
@@ -281,18 +282,20 @@ export class PlayTracker {
         const synced = this.settings.keySource !== 'manual' ? this.synced?.[this.client]?.[keys] : null;
         this.layoutSource = synced ? `${this.client} sync` : 'manual';
         this.layout = parseLayout(synced || this.settings[`keys${keys}`]);
+        this.sendWantedKeys();
     }
 
-    // Every key any layout could use (osu!lazer and osu!stable for each key count, and
-    // the typed-in ones). The app polls only these, so other typing never reaches it.
+    // Only the keys of the chart being played, and none outside a play, so other typing
+    // never reaches the app and it polls as few keys as it can
     wantedKeys() {
-        if (!this.settings.emptyPoor) return [];
-        const vks = new Set();
-        for (const client of ['lazer', 'stable']) {
-            for (const text of Object.values(this.synced?.[client] || {})) for (const vk of parseLayout(text).keys()) vks.add(vk);
-        }
-        for (let k = 1; k <= 10; k++) for (const vk of parseLayout(this.settings[`keys${k}`]).keys()) vks.add(vk);
-        return [...vks].sort((a, b) => a - b);
+        if (!this.settings.emptyPoor || !this.playing || !this.chart) return [];
+        return [...this.layout.keys()].sort((a, b) => a - b);
+    }
+
+    setPlaying(playing) {
+        if (this.playing === playing) return;
+        this.playing = playing;
+        this.sendWantedKeys();
     }
 
     sendWantedKeys() {
@@ -363,6 +366,7 @@ export class PlayTracker {
             this.clock.sample(live, now, rateOf(data), !!data.game?.paused);
             this.lastLive = live;
             this.leftPlayAt = null;
+            this.setPlaying(true);
             this.visible = true;
         } else if (state === STATE_RESULTS && this.session && (this.awaitingResult || this.onResults)) {
             // Only the results screen that follows the play itself: a score opened from the
@@ -372,6 +376,7 @@ export class PlayTracker {
             this.inResults = true;
             this.onResults = true;
             this.awaitingResult = false;
+            this.setPlaying(false);
             this.sendResult(data);
             this.visible = true;
         } else {
@@ -381,6 +386,7 @@ export class PlayTracker {
                 else if (now - this.leftPlayAt > LEFT_PLAY_AFTER) this.awaitingResult = false;
             }
             this.onResults = false;
+            this.setPlaying(false);
             // Keep the last play around so it can stay on screen when hiding is off
             this.visible = !this.settings.hideOutsidePlay && !!this.session;
             this.lastLive = 0;
