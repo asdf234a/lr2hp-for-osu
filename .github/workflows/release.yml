@@ -1,0 +1,89 @@
+# Builds the app on Windows, packs the app and overlay zips and publishes the GitHub release.
+# Run it either by pushing a tag (v0.1.4; an annotated tag's message becomes the changes section)
+# or from the Actions tab on main, which tags the version in the csproj.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      changes:
+        description: Changes section of the release notes (Markdown)
+        required: false
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Version
+        id: version
+        shell: pwsh
+        env:
+          REF_TYPE: ${{ github.ref_type }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          $version = (Select-Xml -Path app/lr2hp-for-osu/lr2hp-for-osu.csproj -XPath '//Version').Node.InnerText
+          $tag = "v$version"
+          if ($env:REF_TYPE -eq 'tag' -and $env:REF_NAME -ne $tag) {
+            throw "Tag $env:REF_NAME doesn't match the app version $version"
+          }
+          if ($env:REF_TYPE -ne 'tag' -and $env:REF_NAME -ne 'main') {
+            throw "Run it on main, not $env:REF_NAME"
+          }
+          foreach ($meta in Get-ChildItem overlays/*/metadata.txt) {
+            if (-not (Select-String -Path $meta -Pattern "^Version: $([regex]::Escape($version))$" -Quiet)) {
+              throw "$($meta.Directory.Name)/metadata.txt is not version $version"
+            }
+          }
+          "tag=$tag" >> $env:GITHUB_OUTPUT
+
+      - name: Build and pack
+        shell: pwsh
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          $app = "out/app/lr2hp-for-osu"
+          dotnet publish app/lr2hp-for-osu -c Release -o $app
+          if ($LASTEXITCODE) { throw "publish failed" }
+          Start-Process -FilePath "$app/lr2hp-for-osu.exe" -ArgumentList '--write-defaults', (Resolve-Path $app) -Wait -NoNewWindow
+          foreach ($f in 'lr2hp-for-osu.exe', 'settings.json', 'keybinds.json') {
+            if (-not (Test-Path "$app/$f")) { throw "$f is missing" }
+          }
+          Push-Location out/app
+          7z a -tzip "../../lr2hp-for-osu-app-$env:TAG.zip" lr2hp-for-osu
+          Pop-Location
+          git archive --format=zip -o "lr2hp-for-osu-overlays-$env:TAG.zip" HEAD:overlays
+
+      - name: Publish
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          REF_TYPE: ${{ github.ref_type }}
+          CHANGES: ${{ inputs.changes }}
+        run: |
+          $changes = $env:CHANGES
+          if ($env:REF_TYPE -eq 'tag') {
+            git fetch --force origin "refs/tags/$($env:TAG):refs/tags/$($env:TAG)"
+            if ((git cat-file -t $env:TAG) -eq 'tag') { $changes = (git tag -l --format='%(contents)' $env:TAG) -join "`n" }
+          }
+          $body = ''
+          if ($changes -and $changes.Trim()) { $body = "## 변경 사항`n`n$($changes.Trim())`n`n" }
+          $body += (Get-Content .github/release-template.md -Raw -Encoding utf8).Replace('{version}', $env:TAG)
+          Set-Content -Path notes.md -Value $body -Encoding utf8NoBOM
+          gh release create $env:TAG "lr2hp-for-osu-app-$env:TAG.zip" "lr2hp-for-osu-overlays-$env:TAG.zip" `
+            --title "lr2hp-for-osu $env:TAG" --notes-file notes.md --target $env:GITHUB_SHA
+          if ($LASTEXITCODE) { throw "release failed" }
