@@ -11,7 +11,7 @@ osu!lazer 매니아(1~7K)용 LR2 HP 게이지 [tosu](https://github.com/tosuapp/
    - `lr2hp-for-osu-overlays-*.zip`: 오버레이 3개 (게이지, 대시보드, 공POOR 표시)
    - `lr2hp-for-osu-app-*.zip`: `lr2hp-for-osu.exe` ([.NET 10 데스크톱 런타임](https://dotnet.microsoft.com/download/dotnet/10.0) 필요)
 2. 오버레이 압축을 풀어 세 폴더를 tosu의 `static` 폴더에 넣습니다. 예: `tosu/static/lr2hp-for-osu`. 세 폴더는 코드를 함께 쓰므로 나란히 있어야 합니다. 레포에서 직접 받을 때는 `overlays` 폴더 안의 세 폴더를 넣습니다.
-3. 앱 압축을 원하는 곳(예: `tosu/lr2hp-for-osu/`)에 풀고 `lr2hp-for-osu.exe`를 실행합니다. 기록과 설정은 exe와 같은 폴더에만 저장되므로 폴더째 옮겨도 그대로 따라갑니다. 저장할 때마다 이전 기록을 `backup` 폴더에 남기고(`clears.json.bak`), 기록 파일이 깨지면 그 파일을 `backup` 폴더로 옮긴 뒤(`clears.json.corrupt-날짜`) 백업에서 복구합니다. 앱 로그는 `logs` 폴더(`lr2hp-for-osu.log`)에 남습니다.
+3. 앱 압축을 풀면 `lr2hp-for-osu` 폴더(`lr2hp-for-osu.exe`, `settings.json`, `keybinds.json`)가 나옵니다. 이 폴더를 통째로 원하는 곳(예: `tosu/lr2hp-for-osu/`)에 두고 `lr2hp-for-osu.exe`를 실행합니다. 바탕화면처럼 다른 파일과 섞이는 곳에 exe만 꺼내 두지 마세요. 새 버전으로 올릴 때는 `lr2hp-for-osu.exe`만 바꿉니다. 새 zip의 json까지 덮어쓰면 설정이 기본값으로 돌아갑니다. 기록과 설정은 exe와 같은 폴더에만 저장되므로 폴더째 옮겨도 그대로 따라갑니다. 저장할 때마다 이전 기록을 `backup` 폴더에 남기고(`clears.json.bak`), 기록 파일이 깨지면 그 파일을 `backup` 폴더로 옮긴 뒤(`clears.json.corrupt-날짜`) 백업에서 복구합니다. 앱 로그는 `logs` 폴더(`lr2hp-for-osu.log`)에 남습니다.
 
 ### 플레이
 
