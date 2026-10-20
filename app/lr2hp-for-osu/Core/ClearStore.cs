@@ -126,11 +126,15 @@ public sealed class ClearStore
         if (!db.Maps.TryGetValue(checksum, out var map)) db.Maps[checksum] = map = new MapRecord();
         if (keys > 0) map.Keys = keys;
         if (!map.Rates.TryGetValue(rate, out var list)) map.Rates[rate] = list = new List<ClearRecord>();
-        // The overlay can report the same results screen twice (reconnects, several overlays)
-        if (list.Any(x => x.Scoring == record.Scoring && x.Lamp == record.Lamp && x.ExScore == record.ExScore && Math.Abs((record.Date - x.Date).TotalMinutes) < 2)) return false;
+        // A safety net: one play is one record even if it comes twice. Its judge counts are osu!'s
+        // own, so they match whichever overlay worked out the gauges
+        if (list.Any(x => x.Scoring == record.Scoring && x.ExScore == record.ExScore && SameJudges(x, record) && Math.Abs((record.Date - x.Date).TotalMinutes) < 2)) return false;
         list.Add(record);
         return true;
     }
+
+    private static bool SameJudges(ClearRecord a, ClearRecord b) =>
+        a.Counts.Length >= 3 && b.Counts.Length >= 3 && a.Counts.Take(3).SequenceEqual(b.Counts.Take(3));
 
     /// <summary>beatoraja's clear types, lowest first</summary>
     public static readonly string[] Lamps = ["failed", "easy", "groove", "hard", "exhard", "fc", "perfect", "max"];
@@ -179,28 +183,23 @@ public sealed class ClearStore
         : $"TOTAL {r.TotalMode} {r.Total:0.#}";
 
     /// <summary>
-    /// Takes a {type:"result"} message from the gauge overlay. Returns false when it was a repeat.
-    /// play: the rate and mods the app itself saw during that play, which win over the overlay's
-    /// (an overlay page opened before an update can still send rate 1 for a DT play).
+    /// The gauge overlay's part of a record, from its {type:"resultReply"} message: lamp, gauges,
+    /// judge counts as LR2 judges, empty POOR, EX score. Null when the lamp isn't one we know.
     /// </summary>
-    public bool AddFromOverlay(JsonElement m, (double Rate, string Mods)? play = null)
+    public static ClearRecord? RecordFrom(JsonElement m)
     {
         string Str(string name) => m.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.String ? v.GetString() ?? "" : "";
         double Num(JsonElement e, string name) => e.ValueKind == JsonValueKind.Object && e.TryGetProperty(name, out var v) && v.ValueKind == JsonValueKind.Number ? v.GetDouble() : 0;
 
-        var checksum = Str("checksum");
         var lamp = Str("lamp");
-        if (checksum.Length == 0 || Rank(lamp) < 0) return false;
-
+        if (Rank(lamp) < 0) return null;
         var total = m.TryGetProperty("total", out var t) ? t : default;
-        var record = new ClearRecord
+        return new ClearRecord
         {
             Lamp = lamp,
             Date = DateTime.Now,
             TotalMode = total.ValueKind == JsonValueKind.Object && total.TryGetProperty("mode", out var tm) ? tm.GetString() ?? "standard" : "standard",
             Total = Num(total, "value"),
-            Client = Str("client"),
-            Mods = play?.Mods ?? Str("mods"),
             Notes = (int)Num(m, "notes"),
             ExScore = (int)Num(m, "exScore"),
             ScoreRate = Num(m, "scoreRate"),
@@ -211,14 +210,18 @@ public sealed class ClearStore
                 ? g.EnumerateObject().Where(p => p.Value.ValueKind == JsonValueKind.Number).ToDictionary(p => p.Name, p => Math.Round(p.Value.GetDouble(), 2))
                 : new(),
         };
-        UpgradeLamp(record);
-        var rate = RateKey(play?.Rate ?? (Num(m, "rate") is > 0 and var r ? r : 1));
+    }
 
+    /// <summary>Saves one play's record. Returns false when it was already there.</summary>
+    public bool Add(string checksum, double rate, int keys, ClearRecord record)
+    {
+        if (checksum.Length == 0) return false;
+        UpgradeLamp(record);
+        var rateKey = RateKey(rate);
         lock (gate)
         {
-            var keys = (int)Num(m, "keys");
-            if (!Insert(checksum, rate, keys, record)) return false;
-            if (JsonFile.IsBlocked(Paths.ClearsFile, out _)) unsaved.Add((checksum, rate, keys, record));
+            if (!Insert(checksum, rateKey, keys, record)) return false;
+            if (JsonFile.IsBlocked(Paths.ClearsFile, out _)) unsaved.Add((checksum, rateKey, keys, record));
             Persist();
         }
         Changed?.Invoke(checksum);

@@ -8,7 +8,7 @@ namespace LR2HP.Core;
 
 /// <summary>
 /// The local websocket the overlays connect to (ws://127.0.0.1:24055/). It sends key
-/// presses and key layouts to them and receives clear results from them. A small
+/// presses and key layouts to them, and asks the gauge overlay for a play's results. A small
 /// hand-rolled server over TcpListener, so no URL reservation or admin rights are needed.
 /// </summary>
 public sealed class OverlayServer : IDisposable
@@ -35,6 +35,12 @@ public sealed class OverlayServer : IDisposable
 
         /// <summary>The key codes this overlay's layouts use, or null if it never said (older overlays: poll every key).</summary>
         public int[]? Keys { get; set; }
+
+        /// <summary>It answers {type:"resultRequest"} with its gauges for the play (the gauge overlay).</summary>
+        public bool AnswersResults { get; set; }
+
+        /// <summary>It sent a result on its own, as older overlays do; logged once.</summary>
+        public bool SentOldResult { get; set; }
     }
 
     private readonly List<Client> clients = new();

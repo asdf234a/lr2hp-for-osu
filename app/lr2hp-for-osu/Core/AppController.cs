@@ -19,8 +19,8 @@ public sealed class AppSettings
 }
 
 /// <summary>
-/// Ties the parts together: key polling and key layouts out to the overlays, clear results
-/// in from them, and tosu for the map that is selected or playing.
+/// Ties the parts together: key polling and key layouts out to the overlays, tosu for the map
+/// that is selected or playing, and the results recorder.
 /// </summary>
 public sealed class AppController : IDisposable
 {
@@ -30,6 +30,12 @@ public sealed class AppController : IDisposable
     public TosuClient Tosu { get; } = new();
     public ClearStore Clears { get; } = new();
     public KeybindSet Keybinds { get; private set; } = JsonFile.Load<KeybindSet>(Paths.KeybindsFile);
+    private readonly ResultRecorder recorder;
+
+    public AppController()
+    {
+        recorder = new ResultRecorder(Tosu, Server, Clears);
+    }
 
     public string? StartError { get; private set; }
 
@@ -65,6 +71,7 @@ public sealed class AppController : IDisposable
 
         Tosu.Host = Settings.TosuHost;
         Tosu.ConnectionChanged += _ => Changed?.Invoke();
+        Tosu.Updated += recorder.OnUpdate;
         Tosu.SnapshotChanged += snapshot =>
         {
             // tosu attached to the other client: its key layouts may be new to us
@@ -96,6 +103,8 @@ public sealed class AppController : IDisposable
         {
             case "hello":
                 client.Name = root.TryGetProperty("overlay", out var name) ? name.GetString() ?? "overlay" : "overlay";
+                client.AnswersResults = root.TryGetProperty("caps", out var caps) && caps.ValueKind == JsonValueKind.Array
+                    && caps.EnumerateArray().Any(x => x.ValueKind == JsonValueKind.String && x.GetString() == "resultRequest");
                 Changed?.Invoke();
                 break;
             case "keys":
@@ -104,10 +113,18 @@ public sealed class AppController : IDisposable
                     : null;
                 UpdatePolledKeys();
                 break;
+            case "resultReply":
+                recorder.OnReply(client, root);
+                break;
             case "clear":
             case "result":
-                var checksum = root.TryGetProperty("checksum", out var c) ? c.GetString() : null;
-                Clears.AddFromOverlay(root, Tosu.LastPlay is { } play && play.Checksum == checksum ? (play.Rate, play.Mods) : null);
+                // Older overlays send results on their own, replays and leaderboard scores
+                // included: the app now decides that itself and asks for them
+                if (!client.SentOldResult)
+                {
+                    client.SentOldResult = true;
+                    Log.Write($"ignored a result from an old {client.Name} overlay; update the overlays");
+                }
                 break;
         }
     }
