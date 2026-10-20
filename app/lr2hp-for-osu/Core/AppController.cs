@@ -37,6 +37,7 @@ public sealed class AppController : IDisposable
     public event Action? Changed;
 
     private string lastSyncedClient = "";
+    private readonly object pollLock = new();
     private int syncing;
 
     public void Start()
@@ -117,9 +118,14 @@ public sealed class AppController : IDisposable
     /// </summary>
     private void UpdatePolledKeys()
     {
-        var connected = Server.Clients;
-        if (connected.Any(c => c.Keys == null)) Keys.SetKeys(KeyPoller.AllKeys);
-        else Keys.SetKeys(connected.SelectMany(c => c.Keys!));
+        // Each overlay connection runs on its own thread: without the lock a list read before a
+        // change could be set after it and leave keys unpolled
+        lock (pollLock)
+        {
+            var connected = Server.Clients;
+            if (connected.Any(c => c.Keys == null)) Keys.SetKeys(KeyPoller.AllKeys);
+            else Keys.SetKeys(connected.SelectMany(c => c.Keys!));
+        }
     }
 
     private string KeybindsMessage() => JsonSerializer.Serialize(new { type = "keybinds", lazer = Keybinds.Lazer, stable = Keybinds.Stable }, JsonFile.Options);
