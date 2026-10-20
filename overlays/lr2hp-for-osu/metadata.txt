@@ -1,6 +1,6 @@
 Usecase: obs-overlay, ingame
 Name: lr2hp-for-osu
-Version: 0.1.3
+Version: 0.1.4
 Author: asdf234a
 CompatibleWith: tosu
 Resolution: 720x64

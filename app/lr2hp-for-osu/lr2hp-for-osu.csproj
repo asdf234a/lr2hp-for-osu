@@ -8,7 +8,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>lr2hp-for-osu</AssemblyName>
     <RootNamespace>LR2HP</RootNamespace>
-    <Version>0.1.3</Version>
+    <Version>0.1.4</Version>
     <Product>lr2hp-for-osu</Product>
     <AssemblyTitle>lr2hp-for-osu</AssemblyTitle>
     <DebugType>none</DebugType>
