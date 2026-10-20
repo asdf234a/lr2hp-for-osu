@@ -1,6 +1,7 @@
 # Builds the app on Windows, packs the app and overlay zips and publishes the GitHub release.
 # Run it either by pushing a tag (v0.1.4; an annotated tag's message becomes the changes section)
-# or from the Actions tab on main, which tags the version in the csproj.
+# or from the Actions tab on main, which tags the version in the csproj (with "replace", an
+# existing release of that version and its tag are deleted first and made again from main).
 name: Release
 
 on:
@@ -12,6 +13,11 @@ on:
         description: Changes section of the release notes (Markdown)
         required: false
         type: string
+      replace:
+        description: Replace the release (and tag) of this version if it already exists
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -74,6 +80,7 @@ jobs:
           TAG: ${{ steps.version.outputs.tag }}
           REF_TYPE: ${{ github.ref_type }}
           CHANGES: ${{ inputs.changes }}
+          REPLACE: ${{ inputs.replace }}
         run: |
           $changes = $env:CHANGES
           if ($env:REF_TYPE -eq 'tag') {
@@ -84,6 +91,13 @@ jobs:
           if ($changes -and $changes.Trim()) { $body = "## 변경 사항`n`n$($changes.Trim())`n`n" }
           $body += (Get-Content .github/release-template.md -Raw -Encoding utf8).Replace('{version}', $env:TAG)
           Set-Content -Path notes.md -Value $body -Encoding utf8NoBOM
+          if ($env:REPLACE -eq 'true') {
+            gh release view $env:TAG *> $null
+            if ($LASTEXITCODE -eq 0) {
+              gh release delete $env:TAG --cleanup-tag --yes
+              if ($LASTEXITCODE) { throw "couldn't delete the old release" }
+            }
+          }
           gh release create $env:TAG "lr2hp-for-osu-app-$env:TAG.zip" "lr2hp-for-osu-overlays-$env:TAG.zip" `
             --title "lr2hp-for-osu $env:TAG" --notes-file notes.md --target $env:GITHUB_SHA
           if ($LASTEXITCODE) { throw "release failed" }
