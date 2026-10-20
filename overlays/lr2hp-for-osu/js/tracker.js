@@ -99,6 +99,7 @@ export class PlayTracker {
         this.windows = null;
         this.chart = null;
         this.chartChecksum = null;
+        this.chartFetch = null;
         this.layout = new Map();
         this.playKey = null;
         this.lastState = -1;
@@ -167,17 +168,29 @@ export class PlayTracker {
         return total + (this.isLazer ? holds : 0);
     }
 
-    async fetchChart(checksum) {
-        if (this.chartChecksum === checksum) return this.chart;
+    // A play that starts again while the chart is still loading waits for the same fetch.
+    // A failed fetch isn't kept, so the next play of that chart tries again.
+    fetchChart(checksum) {
+        if (this.chartChecksum === checksum && this.chartFetch) return this.chartFetch;
         this.chartChecksum = checksum;
         this.chart = null;
-        try {
-            const res = await fetch(`http://${this.host}/files/beatmap/file?${encodeURIComponent(checksum)}`);
-            if (res.ok) this.chart = parseOsuMania(await res.text());
-        } catch (e) {
-            console.warn('chart fetch failed', e);
-        }
-        return this.chart;
+        const pending = (async () => {
+            try {
+                const res = await fetch(`http://${this.host}/files/beatmap/file?${encodeURIComponent(checksum)}`);
+                if (res.ok) return parseOsuMania(await res.text());
+            } catch (e) {
+                console.warn('chart fetch failed', e);
+            }
+            return null;
+        })().then((chart) => {
+            if (this.chartFetch === pending) {
+                this.chart = chart;
+                if (!chart) this.chartFetch = null;
+            }
+            return chart;
+        });
+        this.chartFetch = pending;
+        return pending;
     }
 
     // Converted charts: ask tosu's rosu-pp for the mania object count
@@ -222,6 +235,7 @@ export class PlayTracker {
         }
         this.fetchChart(data.beatmap?.checksum || '').then((c) => {
             if (this.session !== current || !c) return;
+            this.chart = c;
             this.session.setNotes(judgementCount(c, splitHolds));
             this.updateLayout();
             this.classifier = new PressClassifier(c, {
