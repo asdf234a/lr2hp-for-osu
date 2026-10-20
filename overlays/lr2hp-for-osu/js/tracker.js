@@ -42,6 +42,11 @@ const STATE_RESULTS = 7;
 const MODE_MANIA = 3;
 // How long (ms) the hit counts may stay below what was counted before the play starts over
 const HITS_DROP_RESTART = 1500;
+// How long (ms) another screen may show between a play and a results screen before the play
+// counts as left without results (quit, failed in osu!)
+const LEFT_PLAY_AFTER = 1000;
+// tosu's StreamCompanion status while a replay is watched
+const SC_WATCHING = 8;
 
 // Settings defaults, overridden by URL parameters (e.g. ?scale=0.8)
 export function settingsFromUrl(defaults, params) {
@@ -104,6 +109,11 @@ export class PlayTracker {
         this.chartFetch = null;
         this.layout = new Map();
         this.playKey = null;
+        this.awaitingResult = false; // a play is on, or just ended, and its results screen may follow
+        this.leftPlayAt = null;
+        this.onResults = false; // showing the results screen of the play
+        this.scStatus = 0;
+        this.watchingReplay = false;
         this.lastState = -1;
         this.lastLive = 0;
         this.isLazer = false;
@@ -136,6 +146,13 @@ export class PlayTracker {
             onOpen: (ws) => ws.send(`applyFilters:${JSON.stringify(['hitErrors', 'keys'])}`),
             onMessage: (d) => this.onTosuPrecise(d),
         });
+        // Only the StreamCompanion socket tells a watched replay from a play
+        if (this.reportClears) {
+            connect(`ws://${this.host}/tokens`, {
+                onOpen: (ws) => ws.send(`applyFilters:${JSON.stringify(['status'])}`),
+                onMessage: (d) => this.onTokens(d),
+            });
+        }
         // Keep settling presses while the overlay is hidden (rAF may be throttled)
         setInterval(() => this.settlePresses(performance.now()), 20);
         this.applySettings();
@@ -214,6 +231,9 @@ export class PlayTracker {
         this.isLazer = data.client === 'lazer';
         this.client = this.isLazer ? 'lazer' : 'stable';
         this.clearSent = false;
+        this.awaitingResult = true;
+        this.leftPlayAt = null;
+        this.watchingReplay = this.scStatus === SC_WATCHING;
         // Kept from gameplay: on lazer's results screen tosu reports no mods (rate 1)
         this.playRate = rateOf(data);
         this.playMods = data.play?.mods?.name || '';
@@ -266,6 +286,7 @@ export class PlayTracker {
     // Every key any layout could use (osu!lazer and osu!stable for each key count, and
     // the typed-in ones). The app polls only these, so other typing never reaches it.
     wantedKeys() {
+        if (!this.settings.emptyPoor) return [];
         const vks = new Set();
         for (const client of ['lazer', 'stable']) {
             for (const text of Object.values(this.synced?.[client] || {})) for (const vk of parseLayout(text).keys()) vks.add(vk);
@@ -341,20 +362,38 @@ export class PlayTracker {
             }
             this.clock.sample(live, now, rateOf(data), !!data.game?.paused);
             this.lastLive = live;
+            this.leftPlayAt = null;
             this.visible = true;
-        } else if (state === STATE_RESULTS && this.session) {
-            // Pick up judgements that landed after the last gameplay update
+        } else if (state === STATE_RESULTS && this.session && (this.awaitingResult || this.onResults)) {
+            // Only the results screen that follows the play itself: a score opened from the
+            // leaderboard after a quit play is someone else's (or an older) results screen
             const hits = data.resultsScreen?.hits;
             if (hits && !this.inResults) this.session.applyHits(hits, now);
             this.inResults = true;
+            this.onResults = true;
+            this.awaitingResult = false;
             this.sendResult(data);
             this.visible = true;
         } else {
+            // A play left for another screen (quit, failed in osu!) gets no results screen
+            if (this.awaitingResult && state !== STATE_RESULTS) {
+                if (this.leftPlayAt == null) this.leftPlayAt = now;
+                else if (now - this.leftPlayAt > LEFT_PLAY_AFTER) this.awaitingResult = false;
+            }
+            this.onResults = false;
             // Keep the last play around so it can stay on screen when hiding is off
             this.visible = !this.settings.hideOutsidePlay && !!this.session;
             this.lastLive = 0;
         }
         this.lastState = state;
+    }
+
+    // StreamCompanion status: 2 playing, 8 watching a replay
+    onTokens(data) {
+        const status = Number(data?.status);
+        if (!Number.isFinite(status)) return;
+        this.scStatus = status;
+        if (status === SC_WATCHING && this.session && this.awaitingResult) this.watchingReplay = true;
     }
 
     onTosuPrecise(data) {
@@ -389,6 +428,8 @@ export class PlayTracker {
     // the best lamp, EX score and BP per map and rate. Failed plays come as lamp "failed".
     sendResult(data) {
         if (!this.reportClears || this.clearSent || !this.helperConnected || !this.helper) return;
+        // A watched replay isn't a play of yours
+        if (this.watchingReplay) return;
         const s = this.session;
         if (!s || s.judged === 0) return;
         const lamp = s.gauges.clearType() || 'failed';
@@ -419,7 +460,8 @@ export class PlayTracker {
 
     connectHelper() {
         const port = Number(this.settings.keyHelperPort) || 24055;
-        if (!this.settings.emptyPoor) {
+        // The gauge overlay keeps the app connection for the results even with empty POOR off
+        if (!this.settings.emptyPoor && !this.reportClears) {
             this.helper?.close();
             this.helper = null;
             this.helperPort = null;
