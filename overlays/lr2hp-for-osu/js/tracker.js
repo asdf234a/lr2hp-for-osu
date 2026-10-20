@@ -3,7 +3,7 @@
 
 import { parseOsuMania, judgementCount, parseLayout, maniaWindows, playOd, vkName } from './notes.js';
 import { PressClassifier } from './presses.js';
-import { PlaySession } from './session.js';
+import { PlaySession, hitsToCounts } from './session.js';
 import { SongClock } from './clock.js';
 import { connect } from './socket.js';
 
@@ -45,8 +45,6 @@ const HITS_DROP_RESTART = 1500;
 // How long (ms) another screen may show between a play and a results screen before the play
 // counts as left without results (quit, failed in osu!)
 const LEFT_PLAY_AFTER = 1000;
-// tosu's StreamCompanion status while a replay is watched
-const SC_WATCHING = 8;
 
 // Settings defaults, overridden by URL parameters (e.g. ?scale=0.8)
 export function settingsFromUrl(defaults, params) {
@@ -91,7 +89,8 @@ function rateOf(data) {
 }
 
 export class PlayTracker {
-    // name: tells the lr2hp-for-osu app which overlay this is; reportClears: send clears to it
+    // name: tells the lr2hp-for-osu app which overlay this is; reportClears: answer the app's
+    // requests for a play's results (the app decides which results screens to record)
     constructor({ host, settings, debug = false, name = 'overlay', reportClears = false }) {
         this.name = name;
         this.reportClears = reportClears;
@@ -112,8 +111,8 @@ export class PlayTracker {
         this.awaitingResult = false; // a play is on, or just ended, and its results screen may follow
         this.leftPlayAt = null;
         this.onResults = false; // showing the results screen of the play
-        this.scStatus = 0;
-        this.watchingReplay = false;
+        this.playChecksum = null;
+        this.firstHits = null; // osu!'s judgement count at the play's first update: 0 when watched from the start
         this.playing = false; // in gameplay: the app polls the chart's keys
         this.lastState = -1;
         this.lastLive = 0;
@@ -147,13 +146,6 @@ export class PlayTracker {
             onOpen: (ws) => ws.send(`applyFilters:${JSON.stringify(['hitErrors', 'keys'])}`),
             onMessage: (d) => this.onTosuPrecise(d),
         });
-        // Only the StreamCompanion socket tells a watched replay from a play
-        if (this.reportClears) {
-            connect(`ws://${this.host}/tokens`, {
-                onOpen: (ws) => ws.send(`applyFilters:${JSON.stringify(['status'])}`),
-                onMessage: (d) => this.onTokens(d),
-            });
-        }
         // Keep settling presses while the overlay is hidden (rAF may be throttled)
         setInterval(() => this.settlePresses(performance.now()), 20);
         this.applySettings();
@@ -231,10 +223,10 @@ export class PlayTracker {
     startPlay(data) {
         this.isLazer = data.client === 'lazer';
         this.client = this.isLazer ? 'lazer' : 'stable';
-        this.clearSent = false;
         this.awaitingResult = true;
         this.leftPlayAt = null;
-        this.watchingReplay = this.scStatus === SC_WATCHING;
+        this.playChecksum = data.beatmap?.checksum || '';
+        this.firstHits = null;
         // Kept from gameplay: on lazer's results screen tosu reports no mods (rate 1)
         this.playRate = rateOf(data);
         this.playMods = data.play?.mods?.name || '';
@@ -355,12 +347,15 @@ export class PlayTracker {
             // drop for an update and come back. Starting over then would lose the empty POORs and
             // replay every judgement at once; a real retry shows as the song time jumping back,
             // or as counts that stay lower.
+            if (this.firstHits == null) this.firstHits = hitsToCounts(data.play.hits).reduce((a, b) => a + b, 0);
             if (this.session.applyHits(data.play.hits, now)) {
                 this.hitsDroppedAt = null;
             } else if (this.hitsDroppedAt == null) {
                 this.hitsDroppedAt = now;
             } else if (now - this.hitsDroppedAt > HITS_DROP_RESTART) {
                 this.startPlay(data);
+                // A retry from the song's start that tosu showed late, not an overlay opened mid-play
+                this.firstHits = 0;
                 this.session.applyHits(data.play.hits, now);
             }
             this.clock.sample(live, now, rateOf(data), !!data.game?.paused);
@@ -377,7 +372,6 @@ export class PlayTracker {
             this.onResults = true;
             this.awaitingResult = false;
             this.setPlaying(false);
-            this.sendResult(data);
             this.visible = true;
         } else {
             // A play left for another screen (quit, failed in osu!) gets no results screen
@@ -392,14 +386,6 @@ export class PlayTracker {
             this.lastLive = 0;
         }
         this.lastState = state;
-    }
-
-    // StreamCompanion status: 2 playing, 8 watching a replay
-    onTokens(data) {
-        const status = Number(data?.status);
-        if (!Number.isFinite(status)) return;
-        this.scStatus = status;
-        if (status === SC_WATCHING && this.session && this.awaitingResult) this.watchingReplay = true;
     }
 
     onTosuPrecise(data) {
@@ -430,27 +416,21 @@ export class PlayTracker {
         }
     }
 
-    // Every play that reaches the results screen goes to the lr2hp-for-osu app, which keeps
-    // the best lamp, EX score and BP per map and rate. Failed plays come as lamp "failed".
-    sendResult(data) {
-        if (!this.reportClears || this.clearSent || !this.helperConnected || !this.helper) return;
-        // A watched replay isn't a play of yours
-        if (this.watchingReplay) return;
+    // The app saw a results screen it records and asks for this play's gauges. Its `hits` are
+    // osu!'s final counters, so they are counted in first in case our own update hasn't come yet.
+    answerResult(msg) {
+        const reply = (fields) => this.helper?.send(JSON.stringify({ type: 'resultReply', id: msg.id, ...fields }));
         const s = this.session;
-        if (!s || s.judged === 0) return;
-        const lamp = s.gauges.clearType() || 'failed';
-        this.clearSent = true;
-        const b = this.lastData?.beatmap || data.beatmap || {};
+        if (!this.reportClears) return;
+        if (!s || this.playChecksum !== msg.checksum) return reply({ ok: false, reason: 'no play of this map' });
+        if (msg.hits) s.applyHits(msg.hits, performance.now());
         const gauges = {};
         for (const [type, g] of Object.entries(s.gauges.gauges)) gauges[type] = Math.round(g.value * 100) / 100;
-        this.helper.send(JSON.stringify({
-            type: 'result',
-            checksum: b.checksum || '',
-            client: this.client,
-            keys: this.chart?.keys || 0,
-            rate: this.playRate || 1,
-            mods: this.playMods || '',
-            lamp,
+        reply({
+            ok: true,
+            checksum: this.playChecksum,
+            fromStart: this.firstHits === 0,
+            lamp: s.gauges.clearType() || 'failed',
             gauges,
             total: { mode: this.settings.totalMode, value: Math.round(s.total * 100) / 100 },
             notes: s.notes,
@@ -459,7 +439,7 @@ export class PlayTracker {
             counts: s.counts,
             emptyPoor: s.emptyPoor,
             maxCombo: s.maxCombo,
-        }));
+        });
     }
 
     // ------------------------------------------------------------ key helper
@@ -479,7 +459,7 @@ export class PlayTracker {
         this.helperPort = port;
         this.helper = connect(`ws://127.0.0.1:${port}/`, {
             onOpen: (ws) => {
-                ws.send(JSON.stringify({ type: 'hello', overlay: this.name }));
+                ws.send(JSON.stringify({ type: 'hello', overlay: this.name, caps: this.reportClears ? ['resultRequest'] : [] }));
                 this.helperConnected = true;
                 this.helperOffset = null;
                 this.sentKeys = null;
@@ -489,6 +469,10 @@ export class PlayTracker {
                 this.helperConnected = false;
             },
             onMessage: (msg) => {
+                if (msg.type === 'resultRequest') {
+                    this.answerResult(msg);
+                    return;
+                }
                 if (msg.type === 'keybinds') {
                     this.synced = { lazer: msg.lazer || {}, stable: msg.stable || {} };
                     this.updateLayout();
