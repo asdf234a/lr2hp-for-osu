@@ -357,9 +357,11 @@ export class PressClassifier {
         }
         // FAST when the stray press is closer to the coming note than to the last one
         const fast = nearest < since;
+        // Nothing to miss yet: no empty POOR before the chart's first note, whatever the mode
+        if (t < this.first - this.early) return { result: 'ignored', fast };
         if (this.mode === 'lr2oraja') return { result: nearest <= 1000 ? 'empty' : 'ignored', fast: true };
         if (this.mode === 'near') return { result: nearest <= this.nearWindow ? 'empty' : 'ignored', fast };
-        if (t < this.first - this.early || t > this.last + this.late) return { result: 'ignored', fast };
+        if (t > this.last + this.late) return { result: 'ignored', fast };
         return { result: 'empty', fast };
     }
 }

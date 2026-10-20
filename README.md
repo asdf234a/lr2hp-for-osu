@@ -66,7 +66,7 @@ osu!lazer 매니아(1~7K)용 LR2 HP 게이지 [tosu](https://github.com/tosuapp/
 | 설정 | 기본값 | 설명 |
 |---|---|---|
 | Count empty POOR | 켬 | 노트에 맞지 않은 키 입력을 공POOR로 셉니다 |
-| Empty POOR mode | lr2oraja | lr2oraja: 그 레인의 다음 노트 1초 전까지의 입력만(LR2 규칙) / near: 다음 노트가 500ms 안일 때만 / all: 모든 헛누름 |
+| Empty POOR mode | lr2oraja | lr2oraja: 그 레인의 다음 노트 1초 전까지의 입력만(LR2 규칙) / near: 다음 노트가 500ms 안일 때만 / all: 모든 헛누름. 어느 모드든 첫 노트 전의 입력은 세지 않음 |
 | Early-press MISS counts as BAD | 켬 | 너무 일찍 눌러 생긴 osu!의 MISS(OD8 기준 127~164ms 이르게)를 LR2처럼 BAD로 셉니다 |
 | Key helper port | 24055 | 앱과 연결하는 포트 |
 | Input offset (ms) | 0 | 보통 0. 곡 시간은 osu!의 판정 오차로 자동 보정됩니다 |
