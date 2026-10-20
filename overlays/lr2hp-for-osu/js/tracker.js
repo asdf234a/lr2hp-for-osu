@@ -40,6 +40,8 @@ export function gaugeKey(name, fallback) {
 const STATE_PLAY = 2;
 const STATE_RESULTS = 7;
 const MODE_MANIA = 3;
+// How long (ms) the hit counts may stay below what was counted before the play starts over
+const HITS_DROP_RESTART = 1500;
 
 // Settings defaults, overridden by URL parameters (e.g. ?scale=0.8)
 export function settingsFromUrl(defaults, params) {
@@ -110,6 +112,7 @@ export class PlayTracker {
         this.helperConnected = false;
         this.tosuKeyCounts = null;
         this.hitErrorCount = 0;
+        this.hitsDroppedAt = null;
         this.helperOffset = null;
         this.lastData = null;
         this.helper = null;
@@ -219,6 +222,7 @@ export class PlayTracker {
         this.inResults = false;
         this.clock.reset();
         this.tosuKeyCounts = null;
+        this.hitsDroppedAt = null;
         this.unmapped = new Map(); // helper keys pressed that aren't in the layout: vk -> count
         const current = this.session;
         const mods = modsOf(data);
@@ -323,7 +327,15 @@ export class PlayTracker {
                 this.playKey = key;
                 this.startPlay(data);
             }
-            if (!this.session.applyHits(data.play.hits, now)) {
+            // tosu now and then resets its gameplay state mid-play ("Quick reset"), so the counts
+            // drop for an update and come back. Starting over then would lose the empty POORs and
+            // replay every judgement at once; a real retry shows as the song time jumping back,
+            // or as counts that stay lower.
+            if (this.session.applyHits(data.play.hits, now)) {
+                this.hitsDroppedAt = null;
+            } else if (this.hitsDroppedAt == null) {
+                this.hitsDroppedAt = now;
+            } else if (now - this.hitsDroppedAt > HITS_DROP_RESTART) {
                 this.startPlay(data);
                 this.session.applyHits(data.play.hits, now);
             }
